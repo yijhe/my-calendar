@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭行事曆・班表共享</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#F5F3EC;
+  --surface:#FFFFFF;
+  --surface-alt:#FBF9F3;
+  --ink:#26241E;
+  --ink-soft:#726C5E;
+  --ink-faint:#A39C89;
+  --line:#E4E0D2;
+  --line-soft:#EFEBDD;
+  --accent:#3E6B67;
+  --accent-dark:#2C4E4B;
+  --accent-soft:#E1EBE8;
+  --accent-ink:#FFFFFF;
+  --gold:#C08A34;
+  --gold-soft:#F5E9D3;
+  --danger:#B14B4B;
+  --danger-soft:#F6E3E1;
+  --radius-s:8px;
+  --radius-m:14px;
+  --radius-l:22px;
+  --shadow-s:0 1px 3px rgba(38,36,30,.08);
+  --shadow-m:0 14px 34px -10px rgba(38,36,30,.22);
+  --font-display:'Fraunces','Noto Sans TC',serif;
+  --font-body:'Inter','Noto Sans TC',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  padding-bottom:56px;
+}
+body.modal-open{overflow:hidden;}
+#app{max-width:1080px;margin:0 auto;padding:20px 20px 8px;}
+
+/* ---------- Header ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{
+  width:46px;height:46px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:22px;font-weight:600;
+  flex-shrink:0;
+}
+.brand-text h1{margin:0;font-family:var(--font-display);font-size:23px;font-weight:600;letter-spacing:.02em;}
+.brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+.storage-note{
+  font-size:12.5px;color:var(--ink-faint);margin:14px 2px 0;
+  padding-bottom:14px;border-bottom:1px solid var(--line-soft);
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:var(--font-body);font-size:13.5px;font-weight:600;
+  border-radius:999px;border:1px solid transparent;cursor:pointer;
+  padding:9px 16px;transition:transform .12s ease, background .15s ease, border-color .15s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-dark);}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent-dark);}
+.btn-text{background:none;color:var(--accent-dark);padding:9px 10px;}
+.btn-text:hover{text-decoration:underline;}
+.btn-text-sm{background:none;border:none;color:var(--accent-dark);font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 8px;}
+.btn-text-sm:hover{text-decoration:underline;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger-text{background:none;border:none;color:var(--danger);font-weight:600;font-size:13px;cursor:pointer;padding:8px 4px;}
+.btn-danger-text:hover{text-decoration:underline;}
+.btn-primary-sm{background:var(--accent);color:#fff;border:none;border-radius:999px;font-size:12.5px;font-weight:600;padding:6px 14px;cursor:pointer;}
+.btn-primary-sm:hover{background:var(--accent-dark);}
+.icon-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);font-size:17px;cursor:pointer;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+.file-btn{position:relative;display:inline-flex;align-items:center;}
+
+/* ---------- Today banner ---------- */
+.today-banner{margin:16px 0;padding:14px 16px;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-m);box-shadow:var(--shadow-s);}
+.today-label{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--accent-dark);margin-bottom:8px;}
+.today-items{display:flex;flex-wrap:wrap;gap:10px 18px;}
+.today-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);}
+
+/* ---------- Layout ---------- */
+.main-layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;}
+.calendar-panel,.stats-panel{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-l);padding:18px;box-shadow:var(--shadow-s);}
+.stats-panel h2{margin:0 0 12px;font-family:var(--font-display);font-size:17px;font-weight:600;}
+
+/* ---------- Month nav ---------- */
+.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.month-nav h2{flex:1;text-align:center;margin:0;font-family:var(--font-display);font-size:21px;font-weight:600;}
+
+/* ---------- Legend ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.legend-chip{
+  display:flex;align-items:center;gap:6px;border:1px solid var(--line);
+  background:var(--surface-alt);border-radius:999px;padding:5px 12px 5px 8px;
+  font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;
+}
+.legend-chip.is-hidden{opacity:.4;}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ---------- Calendar grid ---------- */
+.weekday-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
+.weekday{text-align:center;font-size:12px;font-weight:700;color:var(--ink-faint);padding:6px 0;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.day-cell{
+  border-radius:var(--radius-s);border:1px solid var(--line-soft);
+  background:var(--surface-alt);padding:5px 4px 6px;
+  display:flex;flex-direction:column;gap:4px;transition:border-color .12s ease;
+}
+.day-cell.other-month{opacity:.4;}
+.day-cell.weekend .day-num{color:var(--gold);}
+.day-cell.today{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset;background:#fff;}
+.day-num{font-family:var(--font-display);font-size:14px;font-weight:600;cursor:pointer;user-select:none;padding:0 2px;}
+.day-num:hover{color:var(--accent-dark);text-decoration:underline;}
+.cell-rows{display:flex;flex-direction:column;gap:3px;}
+.cell-row{display:flex;align-items:center;gap:3px;}
+.cell-member-dot{
+  width:15px;height:15px;border-radius:50%;font-size:8px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.cell-shift-select{
+  flex:1;min-width:0;width:100%;border:1px solid var(--line);border-radius:5px;
+  font-size:10.5px;font-weight:700;padding:2px 1px;font-family:var(--font-body);
+  color:var(--ink);background:#fff;
+}
+
+/* ---------- Empty state ---------- */
+.empty-state{text-align:center;padding:50px 10px;color:var(--ink-soft);}
+.empty-state p{margin:0 0 14px;font-size:14.5px;}
+
+/* ---------- Stats panel ---------- */
+.stats-list{display:flex;flex-direction:column;gap:12px;}
+.member-stat-card{border:1px solid var(--line-soft);border-radius:var(--radius-m);padding:12px;background:var(--surface-alt);}
+.member-stat-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.member-stat-name{font-weight:700;font-size:14px;}
+.member-stat-sub{font-size:11.5px;color:var(--ink-soft);}
+.date-chip-row{display:flex;flex-wrap:wrap;gap:5px;}
+.date-chip{background:var(--gold-soft);color:#7A551E;font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;}
+
+.member-dot{
+  width:30px;height:30px;border-radius:50%;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--font-display);
+}
+.member-dot.sm{width:20px;height:20px;font-size:10px;}
+
+.hint{font-size:12px;color:var(--ink-faint);line-height:1.6;}
+.hint code{background:var(--line-soft);padding:1px 5px;border-radius:4px;font-size:11px;}
+
+/* ---------- Modals ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(38,36,30,.42);
+  display:flex;align-items:center;justify-content:center;padding:18px;z-index:100;
+}
+.modal-overlay[hidden]{display:none;}
+.modal{
+  background:var(--surface);border-radius:var(--radius-l);padding:26px 24px 22px;
+  width:100%;max-width:480px;max-height:88vh;overflow-y:auto;position:relative;
+  box-shadow:var(--shadow-m);
+}
+.modal-wide{max-width:640px;}
+.modal-small{max-width:360px;}
+.modal h3{margin:0 0 14px;font-family:var(--font-display);font-size:19px;font-weight:600;}
+.modal-close{
+  position:absolute;top:16px;right:16px;border:none;background:var(--surface-alt);
+  width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;color:var(--ink-soft);
+}
+.modal-close:hover{background:var(--line-soft);}
+
+/* Day detail modal */
+.day-member-row{
+  display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft);
+  flex-wrap:wrap;
+}
+.day-member-row:last-child{border-bottom:none;}
+.day-member-info{display:flex;align-items:center;gap:9px;min-width:110px;}
+.day-member-name{font-weight:700;font-size:13.5px;}
+.status-badge{font-size:12px;font-weight:600;border-radius:999px;padding:5px 12px;flex:1;}
+.status-off{background:var(--gold-soft);color:#7A551E;}
+.status-work{background:var(--accent-soft);color:var(--accent-dark);}
+.status-unset{background:var(--line-soft);color:var(--ink-faint);}
+.inline-edit-form{display:flex;flex-direction:column;gap:8px;width:100%;padding-top:6px;}
+.inline-edit-form select,.inline-edit-form input[type="text"]{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px;
+}
+.inline-edit-actions{display:flex;justify-content:flex-end;gap:6px;}
+
+/* Member / shift list modal */
+.member-list{display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:16px;}
+.member-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-soft);}
+.member-row-name{flex:1;font-weight:600;font-size:13.5px;}
+.member-form{border-top:1px solid var(--line-soft);padding-top:16px;}
+.member-form h4{margin:0 0 10px;font-size:13.5px;font-weight:700;color:var(--ink-soft);}
+.member-form input[type="text"]{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-s);
+  font-size:14px;font-family:var(--font-body);margin-bottom:10px;
+}
+.color-swatches{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+.swatch.active{border-color:var(--ink);}
+.custom-color-label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;}
+.custom-color-label input{border:none;background:none;width:34px;height:28px;cursor:pointer;}
+.member-form-actions{display:flex;gap:10px;align-items:center;}
+
+.checkbox-label{display:flex;align-items:center;gap:8px;flex-direction:row!important;}
+.checkbox-label input{width:auto!important;margin:0!important;}
+.time-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.time-row input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px;}
+
+/* Sync modal */
+#syncSectionBody label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:12px;}
+#syncSectionBody input[type="text"]{
+  width:100%;margin-top:5px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-s);
+  font-family:var(--font-body);font-size:13.5px;color:var(--ink);
+}
+.sync-card{background:var(--surface-alt);border:1px solid var(--line-soft);border-radius:var(--radius-m);padding:16px;margin-bottom:12px;}
+.sync-code-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.sync-code{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:.15em;color:var(--accent-dark);}
+.sync-status{font-size:12.5px;color:var(--ink-soft);font-weight:700;margin-bottom:6px;}
+.sync-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.import-options{background:var(--surface-alt);border-radius:var(--radius-m);padding:12px;margin:10px 0;}
+.import-options p{margin:0 0 8px;font-size:13px;font-weight:700;}
+.import-options .btn{margin-right:8px;margin-bottom:6px;}
+.modal hr{border:none;border-top:1px solid var(--line-soft);margin:16px 0 4px;}
+
+/* Confirm modal */
+.modal-small p{font-size:14px;line-height:1.7;margin:6px 0 18px;}
+.confirm-actions{display:flex;justify-content:flex-end;gap:10px;}
+
+/* Toast */
+.toast-container{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:200;align-items:center;}
+.toast{
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;
+  opacity:0;transform:translateY(8px);transition:opacity .25s ease, transform .25s ease;box-shadow:var(--shadow-m);
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast-warn{background:var(--danger);}
+
+/* ---------- Responsive ---------- */
+@media (max-width:860px){
+  .main-layout{grid-template-columns:1fr;}
+}
+@media (max-width:560px){
+  #app{padding:14px 12px 6px;}
+  .brand-text h1{font-size:19px;}
+  .topbar-actions .btn{padding:8px 10px;font-size:12px;}
+  .day-num{font-size:12px;}
+  .cell-member-dot{width:12px;height:12px;font-size:7px;}
+  .cell-shift-select{font-size:9px;padding:1px;}
+  .month-nav h2{font-size:18px;}
+  .modal{padding:20px 16px 18px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">家</span>
+      <div class="brand-text">
+        <h1>狗貓鼠之窩行事曆</h1>
+        <p>班表共享・看看哪裡有休假</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="btnMembers">👥 成員管理</button>
+      <button class="btn btn-ghost" id="btnShiftTypes">⏰ 班別設定</button>
+      <button class="btn btn-ghost" id="btnSync">⇄ 設定即時同步</button>
+    </div>
+  </header>
+
+  <p class="storage-note" id="storageNote">尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選右上角同步按鈕即可設定，讓全家人即時看到彼此的班表。</p>
+
+  <section class="today-banner" id="todayBanner"></section>
+
+  <div class="main-layout">
+    <section class="calendar-panel">
+      <div class="month-nav">
+        <button class="icon-btn" id="btnPrevMonth" aria-label="上個月">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button class="icon-btn" id="btnNextMonth" aria-label="下個月">›</button>
+        <button class="btn btn-text" id="btnToday">今天</button>
+      </div>
+
+      <div class="legend" id="legend"></div>
+
+      <div class="weekday-row" id="weekdayRow"></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="empty-state" id="emptyState" hidden>
+        <p>還沒有加入任何家庭成員，新增後即可開始安排班表。</p>
+        <button class="btn btn-primary" id="btnAddFirstMember">新增第一位成員</button>
+      </div>
+    </section>
+
+    <aside class="stats-panel">
+      <h2>本月休假統計</h2>
+      <div id="statsList" class="stats-list"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- Day Detail Modal -->
+<div class="modal-overlay" id="dayModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close>✕</button>
+    <h3 id="dayModalTitle"></h3>
+    <div id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- Member Modal -->
+<div class="modal-overlay" id="memberModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close>✕</button>
+    <h3>成員管理</h3>
+    <div id="memberList" class="member-list"></div>
+    <div class="member-form">
+      <h4 id="memberFormTitle">新增成員</h4>
+      <input type="text" id="memberNameInput" placeholder="成員姓名" maxlength="20">
+      <div class="color-swatches" id="colorSwatches"></div>
+      <label class="custom-color-label">自訂顏色 <input type="color" id="customColorInput"></label>
+      <div class="member-form-actions">
+        <button class="btn btn-primary" id="btnSaveMember">新增成員</button>
+        <button class="btn btn-text" id="btnCancelEditMember" hidden>取消編輯</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shift Type Modal -->
+<div class="modal-overlay" id="shiftModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close>✕</button>
+    <h3>班別設定</h3>
+    <p class="hint">設定每種班別對應的上下班時間，之後就能直接在月曆上選擇班別。</p>
+    <div id="shiftList" class="member-list"></div>
+    <div class="member-form">
+      <h4 id="shiftFormTitle">新增班別</h4>
+      <input type="text" id="shiftNameInput" placeholder="班別名稱，例如：早班" maxlength="20">
+      <input type="text" id="shiftCodeInput" placeholder="月曆顯示代碼（1-3個字，例如：早）" maxlength="3">
+      <label class="checkbox-label" style="margin-bottom:12px;">
+        <input type="checkbox" id="shiftIsLeaveInput"> 此為請假類型（不需輸入上下班時間）
+      </label>
+      <div id="shiftTimeWrap" class="time-row">
+        <input type="time" id="shiftStartInput" value="08:00">
+        <span>–</span>
+        <input type="time" id="shiftEndInput" value="16:00">
+      </div>
+      <div class="color-swatches" id="shiftColorSwatches"></div>
+      <label class="custom-color-label">自訂顏色 <input type="color" id="shiftCustomColorInput"></label>
+      <div class="member-form-actions">
+        <button class="btn btn-primary" id="btnSaveShift">新增班別</button>
+        <button class="btn btn-text" id="btnCancelEditShift" hidden>取消編輯</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sync Modal -->
+<div class="modal-overlay" id="syncModalOverlay" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close>✕</button>
+    <h3>即時同步設定</h3>
+    <div id="syncSectionBody"></div>
+
+    <hr>
+    <p class="hint">下方為手動備份，可作為離線保存或第一次搬移資料之用：</p>
+    <div class="sync-actions">
+      <button class="btn btn-ghost" id="btnExport">⬇ 匯出備份檔</button>
+      <label class="btn btn-ghost file-btn">⬆ 匯入備份檔
+        <input type="file" id="importFileInput" accept=".json" hidden>
+      </label>
+    </div>
+    <div id="importOptions" class="import-options" hidden>
+      <p>選擇匯入方式：</p>
+      <button class="btn btn-ghost" id="btnImportMerge">合併匯入（保留現有資料）</button>
+      <button class="btn btn-ghost" id="btnImportReplace">覆蓋匯入（取代現有資料）</button>
+    </div>
+    <hr>
+    <button class="btn btn-danger-text" id="btnResetAll">重設所有資料</button>
+  </div>
+</div>
+
+<!-- Generic Confirm Modal -->
+<div class="modal-overlay" id="confirmModalOverlay" hidden>
+  <div class="modal modal-small" role="alertdialog" aria-modal="true">
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-text" id="btnConfirmCancel">取消</button>
+      <button class="btn btn-danger" id="btnConfirmOk">確定</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- ====== 即時同步設定（選填）======
+  如需即時同步功能：
+  1. 到 https://console.firebase.google.com 建立一個免費專案
+  2. 在「建構」選單啟用 Firestore Database（選「測試模式」即可）
+  3. 到「專案設定」→「一般」，新增一個網頁應用程式，把顯示的 firebaseConfig 內容整組貼到下面取代預設值
+  若不需要即時同步，可以不理會這一段，程式仍可作為純本機記錄工具正常使用。
+======================================= -->
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyCzMzE1CQd_iPcg04xBZFUwYwCVqJMbwV0",
+     authDomain: "my-calendar-fef55.firebaseapp.com",
+     projectId: "my-calendar-fef55",
+     storageBucket: "my-calendar-fef55.firebasestorage.app",
+     messagingSenderId: "244288950530",
+     appId: "1:244288950530:web:e799fed2c261d758ddf21b"
+  };
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+<script>
+'use strict';
+
+/* ================= 常數 ================= */
+var STORAGE_KEY = 'familyCalendarData_v2';
+var SYNC_COLLECTION = 'familyCalendarSync';
+var WEEKDAY_NAMES = ['日','一','二','三','四','五','六']; /* 依 JS getDay() 索引，0=週日 */
+var WEEKDAY_HEADER = ['一','二','三','四','五','六','日']; /* 月曆表頭順序：週一開始 */
+var PRESET_COLORS = ['#3E6B67','#7B4F72','#4A5FA0','#BE6A3C','#4C7A3C','#B14B62','#4E6E8E','#B4882E','#6B5CA5','#2E8B7C'];
+
+/* ================= 預設班別 ================= */
+function defaultShiftTypes(){
+  return [
+    {id: uid(), name:'早班', code:'早', color:'#C08A34', isLeave:false, start:'08:00', end:'16:00'},
+    {id: uid(), name:'中班', code:'中', color:'#3E6B67', isLeave:false, start:'12:00', end:'20:00'},
+    {id: uid(), name:'晚班', code:'晚', color:'#4A5FA0', isLeave:false, start:'16:00', end:'24:00'},
+    {id: uid(), name:'休假', code:'休', color:'#B4882E', isLeave:true, start:'', end:''}
+  ];
+}
+
+/* ================= 資料層 ================= */
+function normalizeState(raw){
+  var members = Array.isArray(raw.members) ? raw.members : [];
+  var shiftTypes = Array.isArray(raw.shiftTypes) ? raw.shiftTypes : null;
+  var schedules = (raw.schedules && typeof raw.schedules==='object') ? raw.schedules : {};
+  var syncCode = raw.syncCode || null;
+
+  if(!shiftTypes){ shiftTypes = defaultShiftTypes(); }
+
+  /* 舊版資料格式轉換：{status,start,end,note} -> {shiftTypeId,note} */
+  var leaveType = shiftTypes.find(function(s){ return s.isLeave; });
+  Object.keys(schedules).forEach(function(memberId){
+    var byDate = schedules[memberId] || {};
+    Object.keys(byDate).forEach(function(dateStr){
+      var e = byDate[dateStr];
+      if(e && !e.shiftTypeId && e.status){
+        if(e.status === 'off'){
+          if(!leaveType){
+            leaveType = {id: uid(), name:'休假', code:'休', color:'#B4882E', isLeave:true, start:'', end:''};
+            shiftTypes.push(leaveType);
+          }
+          byDate[dateStr] = {shiftTypeId: leaveType.id, note: e.note || ''};
+        } else if(e.status === 'work'){
+          var start = e.start || '08:00', end = e.end || '17:00';
+          var match = shiftTypes.find(function(s){ return !s.isLeave && s.start===start && s.end===end; });
+          if(!match){
+            match = {id: uid(), name:'上班 '+start+'-'+end, code: start.slice(0,2), color: PRESET_COLORS[shiftTypes.length % PRESET_COLORS.length], isLeave:false, start:start, end:end};
+            shiftTypes.push(match);
+          }
+          byDate[dateStr] = {shiftTypeId: match.id, note: e.note || ''};
+        } else {
+          delete byDate[dateStr];
+        }
+      }
+    });
+    schedules[memberId] = byDate;
+  });
+
+  return {members: members, shiftTypes: shiftTypes, schedules: schedules, syncCode: syncCode};
+}
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object') return normalizeState(parsed);
+    }
+  }catch(e){ console.warn('讀取資料失敗', e); }
+  return {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, syncCode:null};
+}
+
+var state = loadState();
+
+/* 只寫入本機，不觸發雲端推送（套用雲端資料下發時使用，避免推送迴圈） */
+function persistLocalOnly(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function saveState(){
+  persistLocalOnly();
+  scheduleCloudPush();
+}
+
+/* ================= 全域變數 ================= */
+var viewDate = startOfMonth(new Date());
+var openDetailDate = null;
+var dayEditingMemberId = null;
+var editingMemberId = null;
+var editingShiftId = null;
+var selectedColor = PRESET_COLORS[0];
+var selectedShiftColor = PRESET_COLORS[0];
+var pendingImportData = null;
+var confirmCallback = null;
+
+var firebaseReady = false;
+var db = null;
+var deviceId = null;
+var syncUnsub = null;
+var syncStatus = 'idle';
+var pushDebounceTimer = null;
+
+/* ================= 工具函式 ================= */
+function pad2(n){ return String(n).padStart(2,'0'); }
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function toDateStr(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+function parseDateStr(s){
+  if(!s) return null;
+  var parts = s.split('-').map(Number);
+  if(parts.length!==3 || parts.some(isNaN)) return null;
+  return new Date(parts[0], parts[1]-1, parts[2]);
+}
+function enumerateDates(startStr, endStr){
+  var start = parseDateStr(startStr);
+  var end = parseDateStr(endStr);
+  if(!start || !end) return [];
+  if(end < start) return [];
+  var out = [];
+  var cur = new Date(start);
+  var guard = 0;
+  while(cur <= end && guard < 400){
+    out.push(toDateStr(cur));
+    cur.setDate(cur.getDate()+1);
+    guard++;
+  }
+  return out;
+}
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function contrastColor(hex){
+  if(!hex) return '#fff';
+  var c = hex.replace('#','');
+  if(c.length!==6) return '#fff';
+  var r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
+  var yiq = (r*299+g*587+b*114)/1000;
+  return yiq >= 150 ? '#26241E' : '#FFFFFF';
+}
+function getMonthMatrix(d){
+  var year = d.getFullYear(), month = d.getMonth();
+  var firstOfMonth = new Date(year, month, 1);
+  var firstWeekday = firstOfMonth.getDay(); /* 0=週日...6=週六 */
+  var mondayOffset = (firstWeekday + 6) % 7; /* 往回推到週一 */
+  var startDate = new Date(year, month, 1 - mondayOffset);
+  var cells = [];
+  for(var i=0;i<42;i++){
+    var dd = new Date(startDate);
+    dd.setDate(startDate.getDate()+i);
+    cells.push(dd);
+  }
+  return cells;
+}
+function formatDateTitle(dateStr){
+  var p = dateStr.split('-').map(Number);
+  var wd = WEEKDAY_NAMES[new Date(p[0],p[1]-1,p[2]).getDay()];
+  return p[0] + '年' + p[1] + '月' + p[2] + '日（' + wd + '）';
+}
+function findShiftType(id){
+  if(!id) return null;
+  return state.shiftTypes.find(function(s){ return s.id===id; }) || null;
+}
+function shiftLabel(shift, compact){
+  if(!shift) return compact ? '?' : '未知班別';
+  if(compact) return shift.code || shift.name.charAt(0);
+  if(shift.isLeave) return shift.name;
+  return shift.name + ' ' + shift.start + '–' + shift.end;
+}
+function buildShiftOptionsHtml(selectedId, compact){
+  var html = '<option value=""' + (!selectedId?' selected':'') + '>' + (compact?'－':'－ 未排班') + '</option>';
+  html += state.shiftTypes.map(function(s){
+    return '<option value="'+s.id+'"'+(s.id===selectedId?' selected':'')+'>'+escapeHtml(shiftLabel(s, compact))+'</option>';
+  }).join('');
+  return html;
+}
+function countShiftUsage(shiftId){
+  var count = 0;
+  Object.keys(state.schedules).forEach(function(memberId){
+    var byDate = state.schedules[memberId] || {};
+    Object.keys(byDate).forEach(function(d){
+      if(byDate[d] && byDate[d].shiftTypeId === shiftId) count++;
+    });
+  });
+  return count;
+}
+
+/* ================= 即時同步（Firebase，同步碼模式） ================= */
+function getDeviceId(){
+  var id = null;
+  try{ id = localStorage.getItem('familyCalendarDeviceId'); }catch(e){}
+  if(!id){
+    id = uid();
+    try{ localStorage.setItem('familyCalendarDeviceId', id); }catch(e){}
+  }
+  return id;
+}
+
+function genSyncCode(){
+  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  var s = '';
+  for(var i=0;i<8;i++){ s += chars.charAt(Math.floor(Math.random()*chars.length)); }
+  return s;
+}
+
+function initFirebase(){
+  if(typeof firebase === 'undefined'){ firebaseReady = false; return; }
+  if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('請貼上') === 0){ firebaseReady = false; return; }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+  }catch(e){
+    firebaseReady = false;
+  }
+}
+
+function applyCloudSnapshot(data){
+  var incoming = normalizeState({members: data.members || [], shiftTypes: data.shiftTypes || null, schedules: data.schedules || {}, syncCode: state.syncCode});
+  state.members = incoming.members;
+  state.shiftTypes = incoming.shiftTypes;
+  state.schedules = incoming.schedules;
+  persistLocalOnly();
+  renderAll();
+}
+
+function attachCloudListener(){
+  if(!firebaseReady || !state.syncCode || !db) return;
+  if(syncUnsub){ syncUnsub(); syncUnsub = null; }
+  syncStatus = 'connecting'; updateSyncUI();
+  syncUnsub = db.collection(SYNC_COLLECTION).doc(state.syncCode).onSnapshot(function(snap){
+    syncStatus = 'synced';
+    if(snap.exists && !snap.metadata.hasPendingWrites){
+      var data = snap.data();
+      if(data.updatedBy !== deviceId){
+        applyCloudSnapshot(data);
+      }
+    }
+    updateSyncUI();
+  }, function(){
+    syncStatus = 'error'; updateSyncUI();
+  });
+}
+
+function detachCloudListener(){
+  if(syncUnsub){ syncUnsub(); syncUnsub = null; }
+  syncStatus = 'idle';
+}
+
+function pushToCloud(){
+  if(!firebaseReady || !state.syncCode || !db) return;
+  db.collection(SYNC_COLLECTION).doc(state.syncCode).set({
+    members: state.members,
+    shiftTypes: state.shiftTypes,
+    schedules: state.schedules,
+    updatedBy: deviceId,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(function(){
+    syncStatus = 'error'; updateSyncUI();
+  });
+}
+
+function scheduleCloudPush(){
+  if(!state.syncCode) return;
+  clearTimeout(pushDebounceTimer);
+  pushDebounceTimer = setTimeout(pushToCloud, 600);
+}
+
+function createSync(){
+  if(!firebaseReady){ showToast('尚未設定雲端服務，請先完成 Firebase 設定', 'warn'); return; }
+  var code = genSyncCode();
+  state.syncCode = code;
+  persistLocalOnly();
+  attachCloudListener();
+  pushToCloud();
+  updateSyncUI();
+  showToast('已建立即時同步，同步碼：' + code);
+}
+
+function joinSync(code){
+  if(!firebaseReady){ showToast('尚未設定雲端服務，請先完成 Firebase 設定', 'warn'); return; }
+  state.syncCode = code;
+  persistLocalOnly();
+  attachCloudListener();
+  updateSyncUI();
+  showToast('已加入同步，正在讀取雲端資料…');
+}
+
+function disableSync(){
+  detachCloudListener();
+  state.syncCode = null;
+  persistLocalOnly();
+  updateSyncUI();
+  showToast('已解除即時同步');
+}
+
+function copySyncCode(){
+  if(!state.syncCode) return;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(state.syncCode).then(function(){
+      showToast('已複製同步碼');
+    }).catch(function(){
+      showToast('同步碼：' + state.syncCode);
+    });
+  } else {
+    showToast('同步碼：' + state.syncCode);
+  }
+}
+
+function updateSyncUI(){
+  var btn = document.getElementById('btnSync');
+  if(btn){
+    if(!firebaseReady || !state.syncCode){
+      btn.textContent = '⇄ 設定即時同步';
+    } else {
+      var map = {connecting:'🟡 連線中…', synced:'🟢 即時同步中', error:'🔴 同步發生問題', idle:'⇄ 設定即時同步'};
+      btn.textContent = map[syncStatus] || map.idle;
+    }
+  }
+  var note = document.getElementById('storageNote');
+  if(note){
+    note.textContent = (firebaseReady && state.syncCode)
+      ? '已設定即時同步（同步碼：' + state.syncCode + '），家人的異動會自動同步到這裡。'
+      : '尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選右上角同步按鈕即可設定，讓全家人即時看到彼此的班表。';
+  }
+  renderSyncSection();
+}
+
+function renderSyncSection(){
+  var el = document.getElementById('syncSectionBody');
+  if(!el) return;
+  if(!firebaseReady){
+    el.innerHTML = '<p class="hint">尚未設定雲端服務，如需即時同步請依照程式碼開頭的說明完成 Firebase 設定（建立專案、啟用 Firestore Database、把設定值貼到 firebaseConfig）。</p>';
+    return;
+  }
+  if(!state.syncCode){
+    el.innerHTML =
+      '<p class="hint">啟用後，在其他家人的裝置上輸入相同同步碼，就能即時共用這份班表。</p>' +
+      '<label>輸入現有同步碼<input type="text" id="syncCodeInput" maxlength="8" placeholder="例如 A7K3P9QZ" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800;"></label>' +
+      '<button class="btn btn-primary" id="btnJoinSync">加入此同步碼</button>' +
+      '<p class="hint" style="margin:14px 0 6px;">還沒有同步碼？</p>' +
+      '<button class="btn btn-ghost" id="btnCreateSync">產生新的同步碼（建立新的家庭同步）</button>';
+    document.getElementById('btnJoinSync').addEventListener('click', function(){
+      var code = document.getElementById('syncCodeInput').value.trim().toUpperCase();
+      if(!code){ showToast('請輸入同步碼', 'warn'); return; }
+      var doJoin = function(){ joinSync(code); };
+      if(state.members.length > 0){
+        openConfirm('加入後，這台裝置目前的成員與班表資料將會被雲端資料取代。確定要加入同步碼「' + code + '」嗎？', doJoin);
+      } else {
+        doJoin();
+      }
+    });
+    document.getElementById('btnCreateSync').addEventListener('click', function(){ createSync(); });
+    return;
+  }
+  var statusMap = {connecting:'連線中…', synced:'● 已連線同步', error:'⚠ 連線失敗，請檢查網路', idle:'準備中…'};
+  el.innerHTML =
+    '<div class="sync-card">' +
+      '<div class="sync-code-row"><span class="sync-code">' + escapeHtml(state.syncCode) + '</span>' +
+      '<button class="icon-btn" id="btnCopySyncCode" aria-label="複製同步碼">📋</button></div>' +
+      '<div class="sync-status">' + (statusMap[syncStatus] || statusMap.idle) + '</div>' +
+      '<p class="hint">在其他家人的裝置上輸入這組同步碼，就能共用班表。</p>' +
+    '</div>' +
+    '<button class="btn btn-danger-text" id="btnDisableSync">解除即時同步</button>';
+  document.getElementById('btnCopySyncCode').addEventListener('click', copySyncCode);
+  document.getElementById('btnDisableSync').addEventListener('click', function(){
+    openConfirm('解除後，這台裝置將不再與其他裝置同步，但目前的資料會保留在本機。確定要解除嗎？', function(){
+      disableSync();
+    });
+  });
+}
+
+/* ================= 渲染 ================= */
+function renderAll(){
+  renderTodayBanner();
+  renderLegend();
+  renderCalendar();
+  renderStats();
+}
+
+function renderTodayBanner(){
+  var el = document.getElementById('todayBanner');
+  if(state.members.length===0){ el.innerHTML=''; return; }
+  var today = new Date();
+  var dateStr = toDateStr(today);
+  var wd = WEEKDAY_NAMES[today.getDay()];
+  var parts = state.members.map(function(m){
+    var e = state.schedules[m.id] && state.schedules[m.id][dateStr];
+    var shift = e ? findShiftType(e.shiftTypeId) : null;
+    var text = shift ? shiftLabel(shift, false) : '未排班';
+    var initial = (m.name||'?').trim().charAt(0) || '?';
+    return '<span class="today-item"><span class="member-dot sm" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' + escapeHtml(m.name) + '．' + escapeHtml(text) + '</span>';
+  }).join('');
+  el.innerHTML = '<div class="today-label">今天 ' + (today.getMonth()+1) + '/' + today.getDate() + '（' + wd + '）</div><div class="today-items">' + parts + '</div>';
+}
+
+function renderLegend(){
+  var legend = document.getElementById('legend');
+  if(state.members.length===0){ legend.innerHTML=''; return; }
+  legend.innerHTML = state.members.map(function(m){
+    return '<button type="button" class="legend-chip' + (m.hidden?' is-hidden':'') + '" data-id="' + m.id + '">' +
+      '<span class="legend-dot" style="background:' + m.color + '"></span>' + escapeHtml(m.name) + '</button>';
+  }).join('');
+  legend.querySelectorAll('.legend-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var m = state.members.find(function(x){ return x.id===chip.dataset.id; });
+      m.hidden = !m.hidden;
+      saveState();
+      renderCalendar();
+      chip.classList.toggle('is-hidden');
+    });
+  });
+}
+
+function renderCalendar(){
+  var grid = document.getElementById('calendarGrid');
+  var weekdayRow = document.getElementById('weekdayRow');
+  var emptyState = document.getElementById('emptyState');
+  var monthLabel = document.getElementById('monthLabel');
+  monthLabel.textContent = viewDate.getFullYear() + '年' + (viewDate.getMonth()+1) + '月';
+
+  weekdayRow.innerHTML = WEEKDAY_HEADER.map(function(w){ return '<div class="weekday">' + w + '</div>'; }).join('');
+
+  if(state.members.length===0){
+    grid.hidden = true; weekdayRow.hidden = true; emptyState.hidden = false;
+    return;
+  }
+  grid.hidden = false; weekdayRow.hidden = false; emptyState.hidden = true;
+
+  var cells = getMonthMatrix(viewDate);
+  var todayStr = toDateStr(new Date());
+  var curMonth = viewDate.getMonth();
+  var visibleMembers = state.members.filter(function(m){ return !m.hidden; });
+
+  grid.innerHTML = cells.map(function(d){
+    var dateStr = toDateStr(d);
+    var inMonth = d.getMonth()===curMonth;
+    var isToday = dateStr===todayStr;
+    var isWeekend = d.getDay()===0 || d.getDay()===6;
+
+    var rowsHtml = visibleMembers.map(function(m){
+      var e = state.schedules[m.id] && state.schedules[m.id][dateStr];
+      var shiftId = e ? e.shiftTypeId : '';
+      var shift = findShiftType(shiftId);
+      var bg = shift ? shift.color : '#FFFFFF';
+      var fg = shift ? contrastColor(shift.color) : 'var(--ink-faint)';
+      var initial = (m.name||'?').trim().charAt(0) || '?';
+      return '<div class="cell-row">' +
+        '<span class="cell-member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '" title="' + escapeHtml(m.name) + '">' + escapeHtml(initial) + '</span>' +
+        '<select class="cell-shift-select" data-member="' + m.id + '" data-date="' + dateStr + '" style="background:' + bg + ';color:' + fg + '" title="' + escapeHtml(m.name) + '・' + escapeHtml(shiftLabel(shift, false)) + '">' +
+        buildShiftOptionsHtml(shiftId, true) +
+        '</select></div>';
+    }).join('');
+
+    var cls = 'day-cell' + (inMonth?'':' other-month') + (isToday?' today':'') + (isWeekend?' weekend':'');
+    return '<div class="' + cls + '" data-date="' + dateStr + '">' +
+      '<div class="day-num" data-date="' + dateStr + '">' + d.getDate() + '</div>' +
+      '<div class="cell-rows">' + rowsHtml + '</div></div>';
+  }).join('');
+
+  grid.querySelectorAll('.day-num').forEach(function(el){
+    el.addEventListener('click', function(){ openDayDetail(el.dataset.date); });
+  });
+  grid.querySelectorAll('.cell-shift-select').forEach(function(sel){
+    sel.addEventListener('change', function(){
+      var memberId = sel.dataset.member;
+      var dateStr = sel.dataset.date;
+      var shiftId = sel.value;
+      if(!state.schedules[memberId]) state.schedules[memberId] = {};
+      if(!shiftId){
+        delete state.schedules[memberId][dateStr];
+      } else {
+        var existing = state.schedules[memberId][dateStr];
+        state.schedules[memberId][dateStr] = {shiftTypeId: shiftId, note: existing ? (existing.note||'') : ''};
+      }
+      saveState();
+      renderCalendar();
+      renderStats();
+      renderTodayBanner();
+    });
+  });
+}
+
+function renderStats(){
+  var list = document.getElementById('statsList');
+  if(state.members.length===0){ list.innerHTML = '<p class="hint">尚無成員資料</p>'; return; }
+  var year = viewDate.getFullYear(), month = viewDate.getMonth();
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  list.innerHTML = state.members.map(function(m){
+    var offDates = [], workCount = 0;
+    for(var day=1; day<=daysInMonth; day++){
+      var dateStr = year + '-' + pad2(month+1) + '-' + pad2(day);
+      var e = state.schedules[m.id] && state.schedules[m.id][dateStr];
+      var shift = e ? findShiftType(e.shiftTypeId) : null;
+      if(shift && shift.isLeave) offDates.push(day);
+      else if(shift) workCount++;
+    }
+    var unset = daysInMonth - offDates.length - workCount;
+    var chips = offDates.map(function(day){
+      var wd = WEEKDAY_NAMES[new Date(year,month,day).getDay()];
+      return '<span class="date-chip">' + (month+1) + '/' + day + '(' + wd + ')</span>';
+    }).join('') || '<span class="hint">本月尚無休假紀錄</span>';
+    var initial = (m.name||'?').trim().charAt(0) || '?';
+    return '<div class="member-stat-card">' +
+      '<div class="member-stat-head">' +
+      '<span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
+      '<div><div class="member-stat-name">' + escapeHtml(m.name) + '</div>' +
+      '<div class="member-stat-sub">休假 ' + offDates.length + ' 天・上班 ' + workCount + ' 天' + (unset>0?('・未排班 ' + unset + ' 天'):'') + '</div></div>' +
+      '</div><div class="date-chip-row">' + chips + '</div></div>';
+  }).join('');
+}
+
+/* ================= 日期詳情 Modal ================= */
+function openDayDetail(dateStr){
+  openDetailDate = dateStr;
+  dayEditingMemberId = null;
+  document.getElementById('dayModalTitle').textContent = formatDateTitle(dateStr);
+  renderDayModalBody();
+  showModal('dayModalOverlay');
+}
+
+function renderDayModalBody(){
+  var body = document.getElementById('dayModalBody');
+  if(state.members.length===0){
+    body.innerHTML = '<p class="hint">尚無成員，請先新增成員。</p>';
+    return;
+  }
+  body.innerHTML = state.members.map(function(m){
+    var e = state.schedules[m.id] && state.schedules[m.id][openDetailDate];
+    var initial = (m.name||'?').trim().charAt(0) || '?';
+    if(dayEditingMemberId === m.id){
+      var curShiftId = e ? e.shiftTypeId : '';
+      var note = (e && e.note) ? e.note : '';
+      return '<div class="day-member-row editing" data-member="' + m.id + '">' +
+        '<div class="day-member-info"><span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
+        '<span class="day-member-name">' + escapeHtml(m.name) + '</span></div>' +
+        '<div class="inline-edit-form">' +
+        '<select data-role="shiftSelect">' + buildShiftOptionsHtml(curShiftId, false) + '</select>' +
+        '<input type="text" data-role="note" placeholder="備註" maxlength="30" value="' + escapeHtml(note) + '">' +
+        '<div class="inline-edit-actions">' +
+        '<button class="btn btn-text-sm" data-role="cancelEdit">取消</button>' +
+        '<button class="btn btn-primary-sm" data-role="saveEdit">儲存</button>' +
+        '</div></div></div>';
+    }
+    var shift = e ? findShiftType(e.shiftTypeId) : null;
+    var badge;
+    if(shift && shift.isLeave) badge = '<span class="status-badge status-off">' + escapeHtml(shift.name) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
+    else if(shift) badge = '<span class="status-badge status-work">' + escapeHtml(shiftLabel(shift,false)) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
+    else badge = '<span class="status-badge status-unset">未排班</span>';
+    return '<div class="day-member-row" data-member="' + m.id + '">' +
+      '<div class="day-member-info"><span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
+      '<span class="day-member-name">' + escapeHtml(m.name) + '</span></div>' +
+      badge + '<button class="btn btn-text-sm" data-role="editBtn">編輯</button></div>';
+  }).join('');
+
+  body.querySelectorAll('.day-member-row').forEach(function(row){
+    var memberId = row.dataset.member;
+    var editBtn = row.querySelector('[data-role="editBtn"]');
+    if(editBtn){
+      editBtn.addEventListener('click', function(){ dayEditingMemberId = memberId; renderDayModalBody(); });
+    }
+    if(row.classList.contains('editing')){
+      row.querySelector('[data-role="cancelEdit"]').addEventListener('click', function(){ dayEditingMemberId = null; renderDayModalBody(); });
+      row.querySelector('[data-role="saveEdit"]').addEventListener('click', function(){
+        var shiftId = row.querySelector('[data-role="shiftSelect"]').value;
+        var note = row.querySelector('[data-role="note"]').value.trim();
+        if(!state.schedules[memberId]) state.schedules[memberId] = {};
+        if(!shiftId) delete state.schedules[memberId][openDetailDate];
+        else state.schedules[memberId][openDetailDate] = {shiftTypeId: shiftId, note: note};
+        saveState(); dayEditingMemberId = null; renderDayModalBody(); renderCalendar(); renderStats(); renderTodayBanner();
+        showToast('已更新班表');
+      });
+    }
+  });
+}
+
+/* ================= 顏色選擇器（成員／班別共用邏輯） ================= */
+function renderColorSwatches(){
+  var wrap = document.getElementById('colorSwatches');
+  wrap.innerHTML = PRESET_COLORS.map(function(c){
+    return '<button type="button" class="swatch' + (c===selectedColor?' active':'') + '" style="background:' + c + '" data-color="' + c + '"></button>';
+  }).join('');
+  wrap.querySelectorAll('.swatch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      selectedColor = sw.dataset.color;
+      wrap.querySelectorAll('.swatch').forEach(function(s){ s.classList.remove('active'); });
+      sw.classList.add('active');
+      document.getElementById('customColorInput').value = selectedColor;
+    });
+  });
+  document.getElementById('customColorInput').value = selectedColor;
+}
+function renderShiftColorSwatches(){
+  var wrap = document.getElementById('shiftColorSwatches');
+  wrap.innerHTML = PRESET_COLORS.map(function(c){
+    return '<button type="button" class="swatch' + (c===selectedShiftColor?' active':'') + '" style="background:' + c + '" data-color="' + c + '"></button>';
+  }).join('');
+  wrap.querySelectorAll('.swatch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      selectedShiftColor = sw.dataset.color;
+      wrap.querySelectorAll('.swatch').forEach(function(s){ s.classList.remove('active'); });
+      sw.classList.add('active');
+      document.getElementById('shiftCustomColorInput').value = selectedShiftColor;
+    });
+  });
+  document.getElementById('shiftCustomColorInput').value = selectedShiftColor;
+}
+
+/* ================= 成員管理 Modal ================= */
+function renderMemberModal(){
+  var list = document.getElementById('memberList');
+  list.innerHTML = state.members.length ? state.members.map(function(m){
+    var initial = (m.name||'?').trim().charAt(0) || '?';
+    return '<div class="member-row" data-id="' + m.id + '">' +
+      '<span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
+      '<span class="member-row-name">' + escapeHtml(m.name) + '</span>' +
+      '<button class="btn btn-text-sm" data-role="edit">編輯</button>' +
+      '<button class="btn btn-text-sm btn-danger-text" data-role="delete">刪除</button></div>';
+  }).join('') : '<p class="hint">尚未新增成員</p>';
+
+  list.querySelectorAll('.member-row').forEach(function(row){
+    var id = row.dataset.id;
+    row.querySelector('[data-role="edit"]').addEventListener('click', function(){ startEditMember(id); });
+    row.querySelector('[data-role="delete"]').addEventListener('click', function(){
+      var m = state.members.find(function(x){ return x.id===id; });
+      openConfirm('確定要刪除成員「' + m.name + '」嗎？此成員的所有班表紀錄也會一併刪除。', function(){
+        state.members = state.members.filter(function(x){ return x.id!==id; });
+        delete state.schedules[id];
+        saveState();
+        renderMemberModal(); renderAll();
+        showToast('已刪除成員');
+      });
+    });
+  });
+  renderColorSwatches();
+}
+function startEditMember(id){
+  var m = state.members.find(function(x){ return x.id===id; });
+  editingMemberId = id;
+  document.getElementById('memberFormTitle').textContent = '編輯成員';
+  document.getElementById('memberNameInput').value = m.name;
+  selectedColor = m.color;
+  renderColorSwatches();
+  document.getElementById('btnSaveMember').textContent = '儲存變更';
+  document.getElementById('btnCancelEditMember').hidden = false;
+}
+function resetMemberForm(){
+  editingMemberId = null;
+  document.getElementById('memberFormTitle').textContent = '新增成員';
+  document.getElementById('memberNameInput').value = '';
+  var used = state.members.map(function(m){ return m.color; });
+  selectedColor = PRESET_COLORS.find(function(c){ return used.indexOf(c)===-1; }) || PRESET_COLORS[state.members.length % PRESET_COLORS.length];
+  renderColorSwatches();
+  document.getElementById('btnSaveMember').textContent = '新增成員';
+  document.getElementById('btnCancelEditMember').hidden = true;
+}
+
+/* ================= 班別設定 Modal ================= */
+function renderShiftModal(){
+  var list = document.getElementById('shiftList');
+  list.innerHTML = state.shiftTypes.length ? state.shiftTypes.map(function(s){
+    var timeLabel = s.isLeave ? '請假類' : (s.start + '–' + s.end);
+    return '<div class="member-row" data-id="' + s.id + '">' +
+      '<span class="member-dot" style="background:' + s.color + ';color:' + contrastColor(s.color) + '">' + escapeHtml(s.code || s.name.charAt(0)) + '</span>' +
+      '<span class="member-row-name">' + escapeHtml(s.name) + '<br><span class="hint">' + escapeHtml(timeLabel) + '</span></span>' +
+      '<button class="btn btn-text-sm" data-role="edit">編輯</button>' +
+      '<button class="btn btn-text-sm btn-danger-text" data-role="delete">刪除</button></div>';
+  }).join('') : '<p class="hint">尚未新增班別</p>';
+
+  list.querySelectorAll('.member-row').forEach(function(row){
+    var id = row.dataset.id;
+    row.querySelector('[data-role="edit"]').addEventListener('click', function(){ startEditShift(id); });
+    row.querySelector('[data-role="delete"]').addEventListener('click', function(){
+      var s = state.shiftTypes.find(function(x){ return x.id===id; });
+      var usage = countShiftUsage(id);
+      var msg = usage>0
+        ? ('確定要刪除班別「' + s.name + '」嗎？目前有 ' + usage + ' 筆班表使用此班別，刪除後這些日期會變成未排班。')
+        : ('確定要刪除班別「' + s.name + '」嗎？');
+      openConfirm(msg, function(){
+        state.shiftTypes = state.shiftTypes.filter(function(x){ return x.id!==id; });
+        Object.keys(state.schedules).forEach(function(memberId){
+          var byDate = state.schedules[memberId] || {};
+          Object.keys(byDate).forEach(function(d){
+            if(byDate[d] && byDate[d].shiftTypeId === id) delete byDate[d];
+          });
+        });
+        saveState(); renderShiftModal(); renderAll();
+        showToast('已刪除班別');
+      });
+    });
+  });
+  renderShiftColorSwatches();
+}
+function startEditShift(id){
+  var s = state.shiftTypes.find(function(x){ return x.id===id; });
+  editingShiftId = id;
+  document.getElementById('shiftFormTitle').textContent = '編輯班別';
+  document.getElementById('shiftNameInput').value = s.name;
+  document.getElementById('shiftCodeInput').value = s.code;
+  document.getElementById('shiftIsLeaveInput').checked = !!s.isLeave;
+  document.getElementById('shiftTimeWrap').hidden = !!s.isLeave;
+  document.getElementById('shiftStartInput').value = s.start || '08:00';
+  document.getElementById('shiftEndInput').value = s.end || '17:00';
+  selectedShiftColor = s.color;
+  renderShiftColorSwatches();
+  document.getElementById('btnSaveShift').textContent = '儲存變更';
+  document.getElementById('btnCancelEditShift').hidden = false;
+}
+function resetShiftForm(){
+  editingShiftId = null;
+  document.getElementById('shiftFormTitle').textContent = '新增班別';
+  document.getElementById('shiftNameInput').value = '';
+  document.getElementById('shiftCodeInput').value = '';
+  document.getElementById('shiftIsLeaveInput').checked = false;
+  document.getElementById('shiftTimeWrap').hidden = false;
+  document.getElementById('shiftStartInput').value = '08:00';
+  document.getElementById('shiftEndInput').value = '16:00';
+  var used = state.shiftTypes.map(function(s){ return s.color; });
+  selectedShiftColor = PRESET_COLORS.find(function(c){ return used.indexOf(c)===-1; }) || PRESET_COLORS[state.shiftTypes.length % PRESET_COLORS.length];
+  renderShiftColorSwatches();
+  document.getElementById('btnSaveShift').textContent = '新增班別';
+  document.getElementById('btnCancelEditShift').hidden = true;
+}
+
+/* ================= Modal 開關 / Toast / Confirm ================= */
+function showModal(id){ document.getElementById(id).hidden = false; document.body.classList.add('modal-open'); }
+function hideModal(id){ document.getElementById(id).hidden = true; document.body.classList.remove('modal-open'); }
+function showToast(msg, type){
+  var container = document.getElementById('toastContainer');
+  var el = document.createElement('div');
+  el.className = 'toast' + (type==='warn' ? ' toast-warn' : '');
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  setTimeout(function(){
+    el.classList.remove('show');
+    setTimeout(function(){ el.remove(); }, 300);
+  }, 2600);
+}
+function openConfirm(message, callback){
+  document.getElementById('confirmMessage').textContent = message;
+  confirmCallback = callback;
+  showModal('confirmModalOverlay');
+}
+function finishImport(){
+  pendingImportData = null;
+  document.getElementById('importOptions').hidden = true;
+  document.getElementById('importFileInput').value = '';
+  renderAll();
+  showToast('匯入完成');
+}
+
+/* ================= 事件綁定 ================= */
+document.addEventListener('DOMContentLoaded', function(){
+
+  resetMemberForm();
+  resetShiftForm();
+  renderAll();
+  deviceId = getDeviceId();
+  initFirebase();
+  updateSyncUI();
+  if(firebaseReady && state.syncCode) attachCloudListener();
+
+  document.getElementById('btnMembers').addEventListener('click', function(){ resetMemberForm(); renderMemberModal(); showModal('memberModalOverlay'); });
+  document.getElementById('btnAddFirstMember').addEventListener('click', function(){ resetMemberForm(); renderMemberModal(); showModal('memberModalOverlay'); });
+  document.getElementById('btnShiftTypes').addEventListener('click', function(){ resetShiftForm(); renderShiftModal(); showModal('shiftModalOverlay'); });
+  document.getElementById('btnSync').addEventListener('click', function(){ renderSyncSection(); showModal('syncModalOverlay'); });
+
+  document.getElementById('btnPrevMonth').addEventListener('click', function(){ viewDate.setMonth(viewDate.getMonth()-1); renderCalendar(); renderStats(); });
+  document.getElementById('btnNextMonth').addEventListener('click', function(){ viewDate.setMonth(viewDate.getMonth()+1); renderCalendar(); renderStats(); });
+  document.getElementById('btnToday').addEventListener('click', function(){ viewDate = startOfMonth(new Date()); renderCalendar(); renderStats(); });
+
+  /* 成員表單 */
+  document.getElementById('btnSaveMember').addEventListener('click', function(){
+    var nameInput = document.getElementById('memberNameInput');
+    var name = nameInput.value.trim();
+    if(!name){ showToast('請輸入成員姓名', 'warn'); return; }
+    if(editingMemberId){
+      var m = state.members.find(function(x){ return x.id===editingMemberId; });
+      m.name = name; m.color = selectedColor;
+      showToast('已更新成員資料');
+    } else {
+      state.members.push({id: uid(), name: name, color: selectedColor, hidden:false});
+      showToast('已新增成員');
+    }
+    saveState();
+    resetMemberForm();
+    renderMemberModal();
+    renderAll();
+  });
+  document.getElementById('btnCancelEditMember').addEventListener('click', resetMemberForm);
+  document.getElementById('customColorInput').addEventListener('input', function(e){
+    selectedColor = e.target.value;
+    document.querySelectorAll('#colorSwatches .swatch').forEach(function(s){ s.classList.remove('active'); });
+  });
+
+  /* 班別表單 */
+  document.getElementById('shiftIsLeaveInput').addEventListener('change', function(e){
+    document.getElementById('shiftTimeWrap').hidden = e.target.checked;
+  });
+  document.getElementById('btnSaveShift').addEventListener('click', function(){
+    var name = document.getElementById('shiftNameInput').value.trim();
+    var code = document.getElementById('shiftCodeInput').value.trim();
+    if(!name){ showToast('請輸入班別名稱', 'warn'); return; }
+    if(!code) code = name.charAt(0);
+    var isLeave = document.getElementById('shiftIsLeaveInput').checked;
+    var start = isLeave ? '' : (document.getElementById('shiftStartInput').value || '08:00');
+    var end = isLeave ? '' : (document.getElementById('shiftEndInput').value || '17:00');
+    if(editingShiftId){
+      var s = state.shiftTypes.find(function(x){ return x.id===editingShiftId; });
+      s.name = name; s.code = code; s.color = selectedShiftColor; s.isLeave = isLeave; s.start = start; s.end = end;
+      showToast('已更新班別');
+    } else {
+      state.shiftTypes.push({id: uid(), name: name, code: code, color: selectedShiftColor, isLeave: isLeave, start: start, end: end});
+      showToast('已新增班別');
+    }
+    saveState();
+    resetShiftForm();
+    renderShiftModal();
+    renderAll();
+  });
+  document.getElementById('btnCancelEditShift').addEventListener('click', resetShiftForm);
+  document.getElementById('shiftCustomColorInput').addEventListener('input', function(e){
+    selectedShiftColor = e.target.value;
+    document.querySelectorAll('#shiftColorSwatches .swatch').forEach(function(s){ s.classList.remove('active'); });
+  });
+
+  /* 備份匯出匯入 */
+  document.getElementById('btnExport').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var today = new Date();
+    a.href = url;
+    a.download = '家庭行事曆備份_' + today.getFullYear() + pad2(today.getMonth()+1) + pad2(today.getDate()) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showToast('已匯出備份檔');
+  });
+  document.getElementById('importFileInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        if(!data || typeof data!=='object' || !Array.isArray(data.members)){
+          showToast('檔案格式不正確', 'warn'); return;
+        }
+        pendingImportData = data;
+        document.getElementById('importOptions').hidden = false;
+      }catch(err){
+        showToast('無法讀取檔案內容', 'warn');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+  document.getElementById('btnImportReplace').addEventListener('click', function(){
+    if(!pendingImportData) return;
+    var extra = state.syncCode ? '目前已連接即時同步，此操作也會覆蓋所有家人裝置上的資料。' : '';
+    openConfirm('確定要覆蓋目前所有資料嗎？' + extra + '此動作無法復原。', function(){
+      state = normalizeState({
+        members: pendingImportData.members || [],
+        shiftTypes: pendingImportData.shiftTypes || null,
+        schedules: pendingImportData.schedules || {},
+        syncCode: state.syncCode
+      });
+      saveState();
+      finishImport();
+    });
+  });
+  document.getElementById('btnImportMerge').addEventListener('click', function(){
+    if(!pendingImportData) return;
+    (pendingImportData.members||[]).forEach(function(im){
+      var existing = state.members.find(function(m){ return m.id===im.id; });
+      if(existing){ existing.name = im.name; existing.color = im.color; }
+      else state.members.push(im);
+    });
+    (pendingImportData.shiftTypes||[]).forEach(function(is){
+      var existing = state.shiftTypes.find(function(s){ return s.id===is.id; });
+      if(existing){ Object.assign(existing, is); }
+      else state.shiftTypes.push(is);
+    });
+    Object.keys(pendingImportData.schedules||{}).forEach(function(memberId){
+      if(!state.schedules[memberId]) state.schedules[memberId] = {};
+      Object.assign(state.schedules[memberId], pendingImportData.schedules[memberId]);
+    });
+    saveState();
+    finishImport();
+  });
+  document.getElementById('btnResetAll').addEventListener('click', function(){
+    var extra = state.syncCode ? '若目前已連接即時同步，家人裝置上的資料也會一併被清除。' : '';
+    openConfirm('確定要重設所有資料嗎？所有成員、班別與班表紀錄都會被刪除。' + extra + '此動作無法復原。', function(){
+      state = {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, syncCode: state.syncCode};
+      saveState();
+      renderAll();
+      hideModal('syncModalOverlay');
+      showToast('已重設所有資料');
+    });
+  });
+
+  /* Modal 通用關閉 */
+  document.querySelectorAll('.modal-overlay').forEach(function(overlay){
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) hideModal(overlay.id); });
+    overlay.querySelectorAll('[data-close]').forEach(function(btn){ btn.addEventListener('click', function(){ hideModal(overlay.id); }); });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){
+      document.querySelectorAll('.modal-overlay').forEach(function(o){ if(!o.hidden) hideModal(o.id); });
+    }
+  });
+
+  /* 確認 Modal */
+  document.getElementById('btnConfirmOk').addEventListener('click', function(){
+    hideModal('confirmModalOverlay');
+    if(confirmCallback) confirmCallback();
+    confirmCallback = null;
+  });
+  document.getElementById('btnConfirmCancel').addEventListener('click', function(){
+    hideModal('confirmModalOverlay');
+    confirmCallback = null;
+  });
+
+});
+</script>
+</body>
+</html>
