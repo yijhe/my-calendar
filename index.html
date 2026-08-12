@@ -57,12 +57,19 @@ body.modal-open{overflow:hidden;}
 }
 .brand-text h1{margin:0;font-family:var(--font-display);font-size:23px;font-weight:600;letter-spacing:.02em;}
 .brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);}
-.topbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
 
 .storage-note{
   font-size:12.5px;color:var(--ink-faint);margin:14px 2px 0;
   padding-bottom:14px;border-bottom:1px solid var(--line-soft);
 }
+
+/* ---------- Footer actions (management/settings, demoted to bottom) ---------- */
+.footer-actions{
+  margin-top:24px;padding:18px;background:var(--surface);border:1px solid var(--line-soft);
+  border-radius:var(--radius-l);box-shadow:var(--shadow-s);
+}
+.footer-actions h2{margin:0 0 12px;font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--ink-soft);}
+.footer-actions-row{display:flex;gap:8px;flex-wrap:wrap;}
 
 /* ---------- Buttons ---------- */
 .btn{
@@ -76,6 +83,7 @@ body.modal-open{overflow:hidden;}
 .btn-primary:hover{background:var(--accent-dark);}
 .btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line);}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent-dark);}
+.btn-locked-active{background:var(--gold-soft)!important;border-color:var(--gold)!important;color:#7A551E!important;}
 .btn-text{background:none;color:var(--accent-dark);padding:9px 10px;}
 .btn-text:hover{text-decoration:underline;}
 .btn-text-sm{background:none;border:none;color:var(--accent-dark);font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 8px;}
@@ -102,10 +110,10 @@ body.modal-open{overflow:hidden;}
 /* ---------- Layout ---------- */
 .main-layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;}
 .calendar-panel,.stats-panel{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-l);padding:18px;box-shadow:var(--shadow-s);}
-.stats-panel h2{margin:0 0 12px;font-family:var(--font-display);font-size:17px;font-weight:600;}
+.stats-panel h2{margin:0 0 12px;font-family:var(--font-display);font-size:19px;font-weight:600;}
 
 /* ---------- Month nav ---------- */
-.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .month-nav h2{flex:1;text-align:center;margin:0;font-family:var(--font-display);font-size:21px;font-weight:600;}
 
 /* ---------- Legend ---------- */
@@ -143,19 +151,22 @@ body.modal-open{overflow:hidden;}
   font-size:10.5px;font-weight:700;padding:2px 1px;font-family:var(--font-body);
   color:var(--ink);background:#fff;
 }
+.calendar-grid.locked .cell-shift-select{opacity:.55;cursor:not-allowed;}
+.calendar-grid.locked .day-cell{cursor:default;}
 
 /* ---------- Empty state ---------- */
 .empty-state{text-align:center;padding:50px 10px;color:var(--ink-soft);}
 .empty-state p{margin:0 0 14px;font-size:14.5px;}
 
 /* ---------- Stats panel ---------- */
-.stats-list{display:flex;flex-direction:column;gap:12px;}
-.member-stat-card{border:1px solid var(--line-soft);border-radius:var(--radius-m);padding:12px;background:var(--surface-alt);}
-.member-stat-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.member-stat-name{font-weight:700;font-size:14px;}
-.member-stat-sub{font-size:11.5px;color:var(--ink-soft);}
-.date-chip-row{display:flex;flex-wrap:wrap;gap:5px;}
-.date-chip{background:var(--gold-soft);color:#7A551E;font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;}
+.stats-list{display:flex;flex-direction:column;gap:14px;}
+.member-stat-card{border:1px solid var(--line-soft);border-radius:var(--radius-m);padding:14px;background:var(--surface-alt);}
+.member-stat-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.member-stat-head .member-dot{width:40px;height:40px;font-size:17px;}
+.member-stat-name{font-weight:700;font-size:19px;}
+.member-stat-sub{font-size:15px;color:var(--ink-soft);line-height:1.5;}
+.date-chip-row{display:flex;flex-wrap:wrap;gap:7px;}
+.date-chip{background:var(--gold-soft);color:#7A551E;font-size:14.5px;font-weight:700;border-radius:999px;padding:5px 13px;}
 
 .member-dot{
   width:30px;height:30px;border-radius:50%;font-size:13px;font-weight:700;
@@ -263,7 +274,7 @@ body.modal-open{overflow:hidden;}
 @media (max-width:560px){
   #app{padding:14px 12px 6px;}
   .brand-text h1{font-size:19px;}
-  .topbar-actions .btn{padding:8px 10px;font-size:12px;}
+  .footer-actions-row .btn,.month-nav .btn{padding:8px 10px;font-size:12px;}
   .day-num{font-size:12px;}
   .cell-member-dot{width:12px;height:12px;font-size:7px;}
   .cell-shift-select{font-size:9px;padding:1px;}
@@ -278,18 +289,13 @@ body.modal-open{overflow:hidden;}
     <div class="brand">
       <span class="brand-mark">家</span>
       <div class="brand-text">
-        <h1>狗貓鼠之窩行事曆</h1>
-        <p>班表共享・看看哪裡有休假</p>
+        <h1>家庭行事曆</h1>
+        <p>班表共享・休假一目了然</p>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <button class="btn btn-ghost" id="btnMembers">👥 成員管理</button>
-      <button class="btn btn-ghost" id="btnShiftTypes">⏰ 班別設定</button>
-      <button class="btn btn-ghost" id="btnSync">⇄ 設定即時同步</button>
     </div>
   </header>
 
-  <p class="storage-note" id="storageNote">尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選右上角同步按鈕即可設定，讓全家人即時看到彼此的班表。</p>
+  <p class="storage-note" id="storageNote">尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選頁面最下方的同步按鈕即可設定，讓全家人即時看到彼此的班表。</p>
 
   <section class="today-banner" id="todayBanner"></section>
 
@@ -300,6 +306,7 @@ body.modal-open{overflow:hidden;}
         <h2 id="monthLabel"></h2>
         <button class="icon-btn" id="btnNextMonth" aria-label="下個月">›</button>
         <button class="btn btn-text" id="btnToday">今天</button>
+        <button class="btn btn-ghost" id="btnLockCalendar">🔓 鎖定月曆</button>
       </div>
 
       <div class="legend" id="legend"></div>
@@ -317,6 +324,15 @@ body.modal-open{overflow:hidden;}
       <div id="statsList" class="stats-list"></div>
     </aside>
   </div>
+
+  <section class="footer-actions">
+    <h2>管理設定</h2>
+    <div class="footer-actions-row">
+      <button class="btn btn-ghost" id="btnMembers">👥 成員管理</button>
+      <button class="btn btn-ghost" id="btnShiftTypes">⏰ 班別設定</button>
+      <button class="btn btn-ghost" id="btnSync">⇄ 設定即時同步</button>
+    </div>
+  </section>
 </div>
 
 <!-- Day Detail Modal -->
@@ -423,12 +439,12 @@ body.modal-open{overflow:hidden;}
 ======================================= -->
 <script>
   var firebaseConfig = {
-    apiKey: "AIzaSyCzMzE1CQd_iPcg04xBZFUwYwCVqJMbwV0",
-     authDomain: "my-calendar-fef55.firebaseapp.com",
-     projectId: "my-calendar-fef55",
-     storageBucket: "my-calendar-fef55.firebasestorage.app",
-     messagingSenderId: "244288950530",
-     appId: "1:244288950530:web:e799fed2c261d758ddf21b"
+    apiKey: "請貼上你的 Firebase apiKey",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
   };
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -528,6 +544,7 @@ var selectedColor = PRESET_COLORS[0];
 var selectedShiftColor = PRESET_COLORS[0];
 var pendingImportData = null;
 var confirmCallback = null;
+var calendarLocked = false; /* 僅本機、不同步：避免長輩裝置誤觸班別輸入 */
 
 var firebaseReady = false;
 var db = null;
@@ -758,7 +775,7 @@ function updateSyncUI(){
   if(note){
     note.textContent = (firebaseReady && state.syncCode)
       ? '已設定即時同步（同步碼：' + state.syncCode + '），家人的異動會自動同步到這裡。'
-      : '尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選右上角同步按鈕即可設定，讓全家人即時看到彼此的班表。';
+      : '尚未設定即時同步時，資料只會存在這個瀏覽器裡；點選頁面最下方的同步按鈕即可設定，讓全家人即時看到彼此的班表。';
   }
   renderSyncSection();
 }
@@ -805,6 +822,29 @@ function renderSyncSection(){
       disableSync();
     });
   });
+}
+
+/* ================= 月曆鎖定（僅本機） ================= */
+function loadLockState(){
+  try{ return localStorage.getItem('familyCalendarLocked_v1') === '1'; }
+  catch(e){ return false; }
+}
+function updateLockUI(){
+  var btn = document.getElementById('btnLockCalendar');
+  if(btn){
+    btn.textContent = calendarLocked ? '🔒 解鎖月曆' : '🔓 鎖定月曆';
+    btn.classList.toggle('btn-locked-active', calendarLocked);
+  }
+  var grid = document.getElementById('calendarGrid');
+  if(grid) grid.classList.toggle('locked', calendarLocked);
+}
+function setLockState(v){
+  calendarLocked = v;
+  try{ localStorage.setItem('familyCalendarLocked_v1', v ? '1' : '0'); }catch(e){}
+  updateLockUI();
+  renderCalendar();
+  if(!document.getElementById('dayModalOverlay').hidden) renderDayModalBody();
+  showToast(v ? '月曆已鎖定' : '月曆已解鎖');
 }
 
 /* ================= 渲染 ================= */
@@ -863,6 +903,7 @@ function renderCalendar(){
     return;
   }
   grid.hidden = false; weekdayRow.hidden = false; emptyState.hidden = true;
+  grid.classList.toggle('locked', calendarLocked);
 
   var cells = getMonthMatrix(viewDate);
   var todayStr = toDateStr(new Date());
@@ -884,7 +925,7 @@ function renderCalendar(){
       var initial = (m.name||'?').trim().charAt(0) || '?';
       return '<div class="cell-row">' +
         '<span class="cell-member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '" title="' + escapeHtml(m.name) + '">' + escapeHtml(initial) + '</span>' +
-        '<select class="cell-shift-select" data-member="' + m.id + '" data-date="' + dateStr + '" style="background:' + bg + ';color:' + fg + '" title="' + escapeHtml(m.name) + '・' + escapeHtml(shiftLabel(shift, false)) + '">' +
+        '<select class="cell-shift-select" data-member="' + m.id + '" data-date="' + dateStr + '" style="background:' + bg + ';color:' + fg + '" title="' + escapeHtml(m.name) + '・' + escapeHtml(shiftLabel(shift, false)) + '"' + (calendarLocked ? ' disabled' : '') + '>' +
         buildShiftOptionsHtml(shiftId, true) +
         '</select></div>';
     }).join('');
@@ -962,7 +1003,9 @@ function renderDayModalBody(){
     body.innerHTML = '<p class="hint">尚無成員，請先新增成員。</p>';
     return;
   }
-  body.innerHTML = state.members.map(function(m){
+  if(calendarLocked) dayEditingMemberId = null;
+  var lockNoticeHtml = calendarLocked ? '<p class="hint">🔒 月曆已鎖定，如需修改請先在月曆頁解鎖。</p>' : '';
+  body.innerHTML = lockNoticeHtml + state.members.map(function(m){
     var e = state.schedules[m.id] && state.schedules[m.id][openDetailDate];
     var initial = (m.name||'?').trim().charAt(0) || '?';
     if(dayEditingMemberId === m.id){
@@ -984,10 +1027,11 @@ function renderDayModalBody(){
     if(shift && shift.isLeave) badge = '<span class="status-badge status-off">' + escapeHtml(shift.name) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else if(shift) badge = '<span class="status-badge status-work">' + escapeHtml(shiftLabel(shift,false)) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else badge = '<span class="status-badge status-unset">未排班</span>';
+    var editBtnHtml = calendarLocked ? '' : '<button class="btn btn-text-sm" data-role="editBtn">編輯</button>';
     return '<div class="day-member-row" data-member="' + m.id + '">' +
       '<div class="day-member-info"><span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
       '<span class="day-member-name">' + escapeHtml(m.name) + '</span></div>' +
-      badge + '<button class="btn btn-text-sm" data-role="editBtn">編輯</button></div>';
+      badge + editBtnHtml + '</div>';
   }).join('');
 
   body.querySelectorAll('.day-member-row').forEach(function(row){
@@ -1190,9 +1234,11 @@ function finishImport(){
 /* ================= 事件綁定 ================= */
 document.addEventListener('DOMContentLoaded', function(){
 
+  calendarLocked = loadLockState();
   resetMemberForm();
   resetShiftForm();
   renderAll();
+  updateLockUI();
   deviceId = getDeviceId();
   initFirebase();
   updateSyncUI();
@@ -1202,6 +1248,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnAddFirstMember').addEventListener('click', function(){ resetMemberForm(); renderMemberModal(); showModal('memberModalOverlay'); });
   document.getElementById('btnShiftTypes').addEventListener('click', function(){ resetShiftForm(); renderShiftModal(); showModal('shiftModalOverlay'); });
   document.getElementById('btnSync').addEventListener('click', function(){ renderSyncSection(); showModal('syncModalOverlay'); });
+  document.getElementById('btnLockCalendar').addEventListener('click', function(){ setLockState(!calendarLocked); });
 
   document.getElementById('btnPrevMonth').addEventListener('click', function(){ viewDate.setMonth(viewDate.getMonth()-1); renderCalendar(); renderStats(); });
   document.getElementById('btnNextMonth').addEventListener('click', function(){ viewDate.setMonth(viewDate.getMonth()+1); renderCalendar(); renderStats(); });
