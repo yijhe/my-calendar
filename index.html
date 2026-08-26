@@ -220,6 +220,7 @@ body.modal-open{overflow:hidden;}
 .status-badge{font-size:12px;font-weight:600;border-radius:999px;padding:5px 12px;flex:1;}
 .status-off{background:var(--gold-soft);color:#7A551E;}
 .status-work{background:var(--accent-soft);color:var(--accent-dark);}
+.status-private{background:#F0E7F5;color:#6B4F8F;}
 .status-unset{background:var(--line-soft);color:var(--ink-faint);}
 .inline-edit-form{display:flex;flex-direction:column;gap:8px;width:100%;padding-top:6px;}
 .inline-edit-form select,.inline-edit-form input[type="text"]{
@@ -246,6 +247,12 @@ body.modal-open{overflow:hidden;}
 
 .checkbox-label{display:flex;align-items:center;gap:8px;flex-direction:row!important;}
 .checkbox-label input{width:auto!important;margin:0!important;}
+.radio-group{margin-bottom:14px;}
+.radio-option{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;cursor:pointer;}
+.radio-option input{width:auto!important;margin:3px 0 0!important;flex-shrink:0;}
+.radio-option-text{display:flex;flex-direction:column;}
+.radio-option-title{font-weight:700;font-size:13.5px;color:var(--ink);}
+.radio-option-sub{font-size:11.5px;color:var(--ink-faint);font-weight:400;margin-top:1px;}
 .time-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .time-row input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px;}
 
@@ -385,9 +392,29 @@ body.modal-open{overflow:hidden;}
       <h4 id="shiftFormTitle">新增班別</h4>
       <input type="text" id="shiftNameInput" placeholder="班別名稱，例如：早班" maxlength="20">
       <input type="text" id="shiftCodeInput" placeholder="月曆顯示代碼（1-3個字，例如：早）" maxlength="3">
-      <label class="checkbox-label" style="margin-bottom:12px;">
-        <input type="checkbox" id="shiftIsLeaveInput"> 此為請假類型（不需輸入上下班時間）
-      </label>
+      <div class="radio-group" id="shiftKindGroup">
+        <label class="radio-option">
+          <input type="radio" name="shiftKind" value="work" checked>
+          <span class="radio-option-text">
+            <span class="radio-option-title">一般班別</span>
+            <span class="radio-option-sub">需輸入上下班時間，列入「上班」統計</span>
+          </span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="shiftKind" value="leave">
+          <span class="radio-option-text">
+            <span class="radio-option-title">請假類型</span>
+            <span class="radio-option-sub">不需輸入時間，列入「休假」統計</span>
+          </span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="shiftKind" value="private">
+          <span class="radio-option-text">
+            <span class="radio-option-title">隱私班別</span>
+            <span class="radio-option-sub">不需輸入時間，但不算請假，列入「上班」統計</span>
+          </span>
+        </label>
+      </div>
       <div id="shiftTimeWrap" class="time-row">
         <input type="time" id="shiftStartInput" value="08:00">
         <span>–</span>
@@ -474,10 +501,10 @@ var PRESET_COLORS = ['#3E6B67','#7B4F72','#4A5FA0','#BE6A3C','#4C7A3C','#B14B62'
 /* ================= 預設班別 ================= */
 function defaultShiftTypes(){
   return [
-    {id: uid(), name:'早班', code:'早', color:'#C08A34', isLeave:false, start:'08:00', end:'16:00'},
-    {id: uid(), name:'中班', code:'中', color:'#3E6B67', isLeave:false, start:'12:00', end:'20:00'},
-    {id: uid(), name:'晚班', code:'晚', color:'#4A5FA0', isLeave:false, start:'16:00', end:'24:00'},
-    {id: uid(), name:'休假', code:'休', color:'#B4882E', isLeave:true, start:'', end:''}
+    {id: uid(), name:'早班', code:'早', color:'#C08A34', isLeave:false, isPrivate:false, start:'08:00', end:'16:00'},
+    {id: uid(), name:'中班', code:'中', color:'#3E6B67', isLeave:false, isPrivate:false, start:'12:00', end:'20:00'},
+    {id: uid(), name:'晚班', code:'晚', color:'#4A5FA0', isLeave:false, isPrivate:false, start:'16:00', end:'24:00'},
+    {id: uid(), name:'休假', code:'休', color:'#B4882E', isLeave:true, isPrivate:false, start:'', end:''}
   ];
 }
 
@@ -626,10 +653,13 @@ function findShiftType(id){
   if(!id) return null;
   return state.shiftTypes.find(function(s){ return s.id===id; }) || null;
 }
+function shiftHidesTime(shift){
+  return !!(shift && (shift.isLeave || shift.isPrivate));
+}
 function shiftLabel(shift, compact){
   if(!shift) return compact ? '?' : '未知班別';
   if(compact) return shift.code || shift.name.charAt(0);
-  if(shift.isLeave) return shift.name;
+  if(shiftHidesTime(shift)) return shift.name;
   return shift.name + ' ' + shift.start + '–' + shift.end;
 }
 function buildShiftOptionsHtml(selectedId, compact){
@@ -1036,6 +1066,7 @@ function renderDayModalBody(){
     var shift = e ? findShiftType(e.shiftTypeId) : null;
     var badge;
     if(shift && shift.isLeave) badge = '<span class="status-badge status-off">' + escapeHtml(shift.name) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
+    else if(shift && shift.isPrivate) badge = '<span class="status-badge status-private">' + escapeHtml(shift.name) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else if(shift) badge = '<span class="status-badge status-work">' + escapeHtml(shiftLabel(shift,false)) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else badge = '<span class="status-badge status-unset">未排班</span>';
     var editBtnHtml = calendarLocked ? '' : '<button class="btn btn-text-sm" data-role="editBtn">編輯</button>';
@@ -1151,7 +1182,7 @@ function resetMemberForm(){
 function renderShiftModal(){
   var list = document.getElementById('shiftList');
   list.innerHTML = state.shiftTypes.length ? state.shiftTypes.map(function(s){
-    var timeLabel = s.isLeave ? '請假類' : (s.start + '–' + s.end);
+    var timeLabel = s.isLeave ? '請假類' : (s.isPrivate ? '隱私班別（不需時間）' : (s.start + '–' + s.end));
     return '<div class="member-row" data-id="' + s.id + '">' +
       '<span class="member-dot" style="background:' + s.color + ';color:' + contrastColor(s.color) + '">' + escapeHtml(s.code || s.name.charAt(0)) + '</span>' +
       '<span class="member-row-name">' + escapeHtml(s.name) + '<br><span class="hint">' + escapeHtml(timeLabel) + '</span></span>' +
@@ -1183,14 +1214,28 @@ function renderShiftModal(){
   });
   renderShiftColorSwatches();
 }
+function shiftKindOf(s){
+  if(s && s.isLeave) return 'leave';
+  if(s && s.isPrivate) return 'private';
+  return 'work';
+}
+function setShiftKindRadio(kind){
+  document.querySelectorAll('#shiftKindGroup input[name="shiftKind"]').forEach(function(r){
+    r.checked = (r.value === kind);
+  });
+  document.getElementById('shiftTimeWrap').hidden = (kind !== 'work');
+}
+function getShiftKindRadio(){
+  var checked = document.querySelector('#shiftKindGroup input[name="shiftKind"]:checked');
+  return checked ? checked.value : 'work';
+}
 function startEditShift(id){
   var s = state.shiftTypes.find(function(x){ return x.id===id; });
   editingShiftId = id;
   document.getElementById('shiftFormTitle').textContent = '編輯班別';
   document.getElementById('shiftNameInput').value = s.name;
   document.getElementById('shiftCodeInput').value = s.code;
-  document.getElementById('shiftIsLeaveInput').checked = !!s.isLeave;
-  document.getElementById('shiftTimeWrap').hidden = !!s.isLeave;
+  setShiftKindRadio(shiftKindOf(s));
   document.getElementById('shiftStartInput').value = s.start || '08:00';
   document.getElementById('shiftEndInput').value = s.end || '17:00';
   selectedShiftColor = s.color;
@@ -1203,8 +1248,7 @@ function resetShiftForm(){
   document.getElementById('shiftFormTitle').textContent = '新增班別';
   document.getElementById('shiftNameInput').value = '';
   document.getElementById('shiftCodeInput').value = '';
-  document.getElementById('shiftIsLeaveInput').checked = false;
-  document.getElementById('shiftTimeWrap').hidden = false;
+  setShiftKindRadio('work');
   document.getElementById('shiftStartInput').value = '08:00';
   document.getElementById('shiftEndInput').value = '16:00';
   var used = state.shiftTypes.map(function(s){ return s.color; });
@@ -1290,23 +1334,27 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   /* 班別表單 */
-  document.getElementById('shiftIsLeaveInput').addEventListener('change', function(e){
-    document.getElementById('shiftTimeWrap').hidden = e.target.checked;
+  document.querySelectorAll('#shiftKindGroup input[name="shiftKind"]').forEach(function(radio){
+    radio.addEventListener('change', function(){
+      document.getElementById('shiftTimeWrap').hidden = (getShiftKindRadio() !== 'work');
+    });
   });
   document.getElementById('btnSaveShift').addEventListener('click', function(){
     var name = document.getElementById('shiftNameInput').value.trim();
     var code = document.getElementById('shiftCodeInput').value.trim();
     if(!name){ showToast('請輸入班別名稱', 'warn'); return; }
     if(!code) code = name.charAt(0);
-    var isLeave = document.getElementById('shiftIsLeaveInput').checked;
-    var start = isLeave ? '' : (document.getElementById('shiftStartInput').value || '08:00');
-    var end = isLeave ? '' : (document.getElementById('shiftEndInput').value || '17:00');
+    var kind = getShiftKindRadio();
+    var isLeave = kind === 'leave';
+    var isPrivate = kind === 'private';
+    var start = (kind === 'work') ? (document.getElementById('shiftStartInput').value || '08:00') : '';
+    var end = (kind === 'work') ? (document.getElementById('shiftEndInput').value || '17:00') : '';
     if(editingShiftId){
       var s = state.shiftTypes.find(function(x){ return x.id===editingShiftId; });
-      s.name = name; s.code = code; s.color = selectedShiftColor; s.isLeave = isLeave; s.start = start; s.end = end;
+      s.name = name; s.code = code; s.color = selectedShiftColor; s.isLeave = isLeave; s.isPrivate = isPrivate; s.start = start; s.end = end;
       showToast('已更新班別');
     } else {
-      state.shiftTypes.push({id: uid(), name: name, code: code, color: selectedShiftColor, isLeave: isLeave, start: start, end: end});
+      state.shiftTypes.push({id: uid(), name: name, code: code, color: selectedShiftColor, isLeave: isLeave, isPrivate: isPrivate, start: start, end: end});
       showToast('已新增班別');
     }
     saveState();
