@@ -156,9 +156,13 @@ body.modal-open{overflow:hidden;}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   cursor:pointer;filter:grayscale(1);opacity:.4;
 }
-.pickup-toggle.active{
+.pickup-toggle.pickup-yes{
   background:#FFF3D6;border-color:var(--gold);filter:none;opacity:1;
   box-shadow:0 0 0 1px var(--gold) inset;
+}
+.pickup-toggle.pickup-no{
+  background:var(--danger-soft);border-color:var(--danger);filter:none;opacity:1;
+  box-shadow:0 0 0 1px var(--danger) inset;
 }
 .cell-shift-select{
   width:100%;min-width:0;border:1px solid var(--line);border-radius:6px;
@@ -239,9 +243,13 @@ body.modal-open{overflow:hidden;}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   cursor:pointer;filter:grayscale(1);opacity:.4;
 }
-.pickup-toggle-lg.active{
+.pickup-toggle-lg.pickup-yes{
   background:#FFF3D6;border-color:var(--gold);filter:none;opacity:1;
   box-shadow:0 0 0 1px var(--gold) inset;
+}
+.pickup-toggle-lg.pickup-no{
+  background:var(--danger-soft);border-color:var(--danger);filter:none;opacity:1;
+  box-shadow:0 0 0 1px var(--danger) inset;
 }
 .pickup-toggle-lg:disabled{cursor:not-allowed;opacity:.25;}
 .inline-edit-form{display:flex;flex-direction:column;gap:8px;width:100%;padding-top:6px;}
@@ -348,7 +356,7 @@ body.modal-open{overflow:hidden;}
       </div>
 
       <div class="legend" id="legend"></div>
-      <p class="hint">🛵 表示當天可協助接送小孩，點選圖示即可標記／取消，家人都能看到。</p>
+      <p class="hint">🛵 圖示可標記當天是否能接送小孩：點一下＝🛵可接送（金色），再點一下＝❌不能接送（紅色），再點一下取消標記，家人都能看到。</p>
 
       <div class="calendar-scroll">
         <div class="weekday-row" id="weekdayRow"></div>
@@ -677,17 +685,30 @@ function findShiftType(id){
   if(!id) return null;
   return state.shiftTypes.find(function(s){ return s.id===id; }) || null;
 }
-function isPickupMarked(memberId, dateStr){
-  return !!(state.pickups[memberId] && state.pickups[memberId][dateStr]);
+function getPickupState(memberId, dateStr){
+  var v = state.pickups[memberId] && state.pickups[memberId][dateStr];
+  if(v === true) return 'yes'; /* 舊版資料相容：true 一律視為「可接送」 */
+  if(v === 'yes' || v === 'no') return v;
+  return '';
 }
 function togglePickup(memberId, dateStr){
   if(calendarLocked) return;
   if(!state.pickups[memberId]) state.pickups[memberId] = {};
-  if(state.pickups[memberId][dateStr]) delete state.pickups[memberId][dateStr];
-  else state.pickups[memberId][dateStr] = true;
+  var cur = getPickupState(memberId, dateStr);
+  var next = (cur === '') ? 'yes' : (cur === 'yes') ? 'no' : '';
+  if(next === '') delete state.pickups[memberId][dateStr];
+  else state.pickups[memberId][dateStr] = next;
   saveState();
   renderCalendar();
   if(openDetailDate === dateStr && !document.getElementById('dayModalOverlay').hidden) renderDayModalBody();
+}
+function pickupIcon(pState){
+  return pState === 'no' ? '❌' : '🛵';
+}
+function pickupTitle(pState){
+  if(pState === 'yes') return '可接送';
+  if(pState === 'no') return '不能接送';
+  return '點選標記接送';
 }
 function shiftHidesTime(shift){
   return !!(shift && (shift.isLeave || shift.isPrivate));
@@ -1002,11 +1023,11 @@ function renderCalendar(){
       var bg = shift ? shift.color : '#FFFFFF';
       var fg = shift ? contrastColor(shift.color) : 'var(--ink-faint)';
       var initial = (m.name||'?').trim().charAt(0) || '?';
-      var pickupOn = isPickupMarked(m.id, dateStr);
+      var pState = getPickupState(m.id, dateStr);
       return '<div class="cell-member-block">' +
         '<div class="cell-member-top">' +
         '<span class="cell-member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '" title="' + escapeHtml(m.name) + '">' + escapeHtml(initial) + '</span>' +
-        '<button type="button" class="pickup-toggle' + (pickupOn?' active':'') + '" data-member="' + m.id + '" data-date="' + dateStr + '" title="' + escapeHtml(m.name) + '・可接送"' + (calendarLocked ? ' disabled' : '') + '>🛵</button>' +
+        '<button type="button" class="pickup-toggle' + (pState?(' pickup-'+pState):'') + '" data-member="' + m.id + '" data-date="' + dateStr + '" title="' + escapeHtml(m.name) + '・' + pickupTitle(pState) + '"' + (calendarLocked ? ' disabled' : '') + '>' + pickupIcon(pState) + '</button>' +
         '</div>' +
         '<select class="cell-shift-select" data-member="' + m.id + '" data-date="' + dateStr + '" style="background:' + bg + ';color:' + fg + '" title="' + escapeHtml(m.name) + '・' + escapeHtml(shiftLabel(shift, false)) + '"' + (calendarLocked ? ' disabled' : '') + '>' +
         buildShiftOptionsHtml(shiftId, true) +
@@ -1117,8 +1138,8 @@ function renderDayModalBody(){
     else if(shift) badge = '<span class="status-badge status-work">' + escapeHtml(shiftLabel(shift,false)) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else badge = '<span class="status-badge status-unset">未排班</span>';
     var editBtnHtml = calendarLocked ? '' : '<button class="btn btn-text-sm" data-role="editBtn">編輯</button>';
-    var pickupOn = isPickupMarked(m.id, openDetailDate);
-    var pickupBtnHtml = '<button type="button" class="pickup-toggle-lg' + (pickupOn?' active':'') + '" data-role="pickupToggle" title="可接送小孩"' + (calendarLocked ? ' disabled' : '') + '>🛵</button>';
+    var pState = getPickupState(m.id, openDetailDate);
+    var pickupBtnHtml = '<button type="button" class="pickup-toggle-lg' + (pState?(' pickup-'+pState):'') + '" data-role="pickupToggle" title="' + pickupTitle(pState) + '"' + (calendarLocked ? ' disabled' : '') + '>' + pickupIcon(pState) + '</button>';
     return '<div class="day-member-row" data-member="' + m.id + '">' +
       '<div class="day-member-info"><span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
       '<span class="day-member-name">' + escapeHtml(m.name) + '</span></div>' +
