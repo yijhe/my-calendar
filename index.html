@@ -176,9 +176,11 @@ body.modal-open{overflow:hidden;}
   background-size: 4px 4px, 4px 4px;
   background-repeat:no-repeat;
 }
-.calendar-grid.locked .cell-shift-select{opacity:.55;cursor:not-allowed;}
-.calendar-grid.locked .pickup-toggle{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.calendar-grid.locked .cell-shift-select{cursor:not-allowed;}
+.calendar-grid.locked .pickup-toggle{cursor:not-allowed;pointer-events:none;}
 .calendar-grid.locked .day-cell{cursor:default;}
+.cell-shift-select:disabled{opacity:1;-webkit-text-fill-color:currentColor;}
+.pickup-toggle:disabled{-webkit-text-fill-color:currentColor;}
 
 /* ---------- Empty state ---------- */
 .empty-state{text-align:center;padding:50px 10px;color:var(--ink-soft);}
@@ -251,7 +253,7 @@ body.modal-open{overflow:hidden;}
   background:var(--danger-soft);border-color:var(--danger);filter:none;opacity:1;
   box-shadow:0 0 0 1px var(--danger) inset;
 }
-.pickup-toggle-lg:disabled{cursor:not-allowed;opacity:.25;}
+.pickup-toggle-lg:disabled{cursor:not-allowed;}
 .inline-edit-form{display:flex;flex-direction:column;gap:8px;width:100%;padding-top:6px;}
 .inline-edit-form select,.inline-edit-form input[type="text"]{
   width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px;
@@ -356,7 +358,6 @@ body.modal-open{overflow:hidden;}
       </div>
 
       <div class="legend" id="legend"></div>
-      <p class="hint">🛵 圖示可標記當天是否能接送小孩：點一下＝🛵可接送（金色），再點一下＝❌不能接送（紅色），再點一下取消標記，家人都能看到。</p>
 
       <div class="calendar-scroll">
         <div class="weekday-row" id="weekdayRow"></div>
@@ -695,9 +696,8 @@ function togglePickup(memberId, dateStr){
   if(calendarLocked) return;
   if(!state.pickups[memberId]) state.pickups[memberId] = {};
   var cur = getPickupState(memberId, dateStr);
-  var next = (cur === '') ? 'yes' : (cur === 'yes') ? 'no' : '';
-  if(next === '') delete state.pickups[memberId][dateStr];
-  else state.pickups[memberId][dateStr] = next;
+  var next = (cur === 'yes') ? 'no' : 'yes';
+  state.pickups[memberId][dateStr] = next;
   saveState();
   renderCalendar();
   if(openDetailDate === dateStr && !document.getElementById('dayModalOverlay').hidden) renderDayModalBody();
