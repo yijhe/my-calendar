@@ -145,10 +145,20 @@ body.modal-open{overflow:hidden;}
 .cell-rows{display:flex;flex-direction:column;gap:7px;}
 .cell-member-block{display:flex;flex-direction:column;align-items:stretch;gap:2px;}
 .cell-member-block + .cell-member-block{border-top:1px dashed var(--line-soft);padding-top:6px;}
+.cell-member-top{display:flex;align-items:center;justify-content:center;gap:4px;}
 .cell-member-dot{
   width:18px;height:18px;border-radius:50%;font-size:9.5px;font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  margin:0 auto;
+}
+.pickup-toggle{
+  width:18px;height:18px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface-alt);font-size:11px;line-height:1;padding:0;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  cursor:pointer;filter:grayscale(1);opacity:.4;
+}
+.pickup-toggle.active{
+  background:#FFF3D6;border-color:var(--gold);filter:none;opacity:1;
+  box-shadow:0 0 0 1px var(--gold) inset;
 }
 .cell-shift-select{
   width:100%;min-width:0;border:1px solid var(--line);border-radius:6px;
@@ -163,6 +173,7 @@ body.modal-open{overflow:hidden;}
   background-repeat:no-repeat;
 }
 .calendar-grid.locked .cell-shift-select{opacity:.55;cursor:not-allowed;}
+.calendar-grid.locked .pickup-toggle{opacity:.25;cursor:not-allowed;pointer-events:none;}
 .calendar-grid.locked .day-cell{cursor:default;}
 
 /* ---------- Empty state ---------- */
@@ -222,6 +233,17 @@ body.modal-open{overflow:hidden;}
 .status-work{background:var(--accent-soft);color:var(--accent-dark);}
 .status-private{background:#F0E7F5;color:#6B4F8F;}
 .status-unset{background:var(--line-soft);color:var(--ink-faint);}
+.pickup-toggle-lg{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface-alt);font-size:17px;line-height:1;padding:0;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  cursor:pointer;filter:grayscale(1);opacity:.4;
+}
+.pickup-toggle-lg.active{
+  background:#FFF3D6;border-color:var(--gold);filter:none;opacity:1;
+  box-shadow:0 0 0 1px var(--gold) inset;
+}
+.pickup-toggle-lg:disabled{cursor:not-allowed;opacity:.25;}
 .inline-edit-form{display:flex;flex-direction:column;gap:8px;width:100%;padding-top:6px;}
 .inline-edit-form select,.inline-edit-form input[type="text"]{
   width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);font-size:13px;
@@ -326,6 +348,7 @@ body.modal-open{overflow:hidden;}
       </div>
 
       <div class="legend" id="legend"></div>
+      <p class="hint">🛵 表示當天可協助接送小孩，點選圖示即可標記／取消，家人都能看到。</p>
 
       <div class="calendar-scroll">
         <div class="weekday-row" id="weekdayRow"></div>
@@ -513,6 +536,7 @@ function normalizeState(raw){
   var members = Array.isArray(raw.members) ? raw.members : [];
   var shiftTypes = Array.isArray(raw.shiftTypes) ? raw.shiftTypes : null;
   var schedules = (raw.schedules && typeof raw.schedules==='object') ? raw.schedules : {};
+  var pickups = (raw.pickups && typeof raw.pickups==='object') ? raw.pickups : {};
   var syncCode = raw.syncCode || null;
 
   if(!shiftTypes){ shiftTypes = defaultShiftTypes(); }
@@ -546,7 +570,7 @@ function normalizeState(raw){
     schedules[memberId] = byDate;
   });
 
-  return {members: members, shiftTypes: shiftTypes, schedules: schedules, syncCode: syncCode};
+  return {members: members, shiftTypes: shiftTypes, schedules: schedules, pickups: pickups, syncCode: syncCode};
 }
 
 function loadState(){
@@ -557,7 +581,7 @@ function loadState(){
       if(parsed && typeof parsed === 'object') return normalizeState(parsed);
     }
   }catch(e){ console.warn('讀取資料失敗', e); }
-  return {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, syncCode:null};
+  return {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, pickups:{}, syncCode:null};
 }
 
 var state = loadState();
@@ -653,6 +677,18 @@ function findShiftType(id){
   if(!id) return null;
   return state.shiftTypes.find(function(s){ return s.id===id; }) || null;
 }
+function isPickupMarked(memberId, dateStr){
+  return !!(state.pickups[memberId] && state.pickups[memberId][dateStr]);
+}
+function togglePickup(memberId, dateStr){
+  if(calendarLocked) return;
+  if(!state.pickups[memberId]) state.pickups[memberId] = {};
+  if(state.pickups[memberId][dateStr]) delete state.pickups[memberId][dateStr];
+  else state.pickups[memberId][dateStr] = true;
+  saveState();
+  renderCalendar();
+  if(openDetailDate === dateStr && !document.getElementById('dayModalOverlay').hidden) renderDayModalBody();
+}
 function shiftHidesTime(shift){
   return !!(shift && (shift.isLeave || shift.isPrivate));
 }
@@ -711,10 +747,11 @@ function initFirebase(){
 }
 
 function applyCloudSnapshot(data){
-  var incoming = normalizeState({members: data.members || [], shiftTypes: data.shiftTypes || null, schedules: data.schedules || {}, syncCode: state.syncCode});
+  var incoming = normalizeState({members: data.members || [], shiftTypes: data.shiftTypes || null, schedules: data.schedules || {}, pickups: data.pickups || {}, syncCode: state.syncCode});
   state.members = incoming.members;
   state.shiftTypes = incoming.shiftTypes;
   state.schedules = incoming.schedules;
+  state.pickups = incoming.pickups;
   persistLocalOnly();
   renderAll();
 }
@@ -748,6 +785,7 @@ function pushToCloud(){
     members: state.members,
     shiftTypes: state.shiftTypes,
     schedules: state.schedules,
+    pickups: state.pickups,
     updatedBy: deviceId,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(function(){
@@ -964,8 +1002,12 @@ function renderCalendar(){
       var bg = shift ? shift.color : '#FFFFFF';
       var fg = shift ? contrastColor(shift.color) : 'var(--ink-faint)';
       var initial = (m.name||'?').trim().charAt(0) || '?';
+      var pickupOn = isPickupMarked(m.id, dateStr);
       return '<div class="cell-member-block">' +
+        '<div class="cell-member-top">' +
         '<span class="cell-member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '" title="' + escapeHtml(m.name) + '">' + escapeHtml(initial) + '</span>' +
+        '<button type="button" class="pickup-toggle' + (pickupOn?' active':'') + '" data-member="' + m.id + '" data-date="' + dateStr + '" title="' + escapeHtml(m.name) + '・可接送"' + (calendarLocked ? ' disabled' : '') + '>🛵</button>' +
+        '</div>' +
         '<select class="cell-shift-select" data-member="' + m.id + '" data-date="' + dateStr + '" style="background:' + bg + ';color:' + fg + '" title="' + escapeHtml(m.name) + '・' + escapeHtml(shiftLabel(shift, false)) + '"' + (calendarLocked ? ' disabled' : '') + '>' +
         buildShiftOptionsHtml(shiftId, true) +
         '</select></div>';
@@ -979,6 +1021,11 @@ function renderCalendar(){
 
   grid.querySelectorAll('.day-num').forEach(function(el){
     el.addEventListener('click', function(){ openDayDetail(el.dataset.date); });
+  });
+  grid.querySelectorAll('.pickup-toggle').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      togglePickup(btn.dataset.member, btn.dataset.date);
+    });
   });
   grid.querySelectorAll('.cell-shift-select').forEach(function(sel){
     sel.addEventListener('change', function(){
@@ -1070,10 +1117,12 @@ function renderDayModalBody(){
     else if(shift) badge = '<span class="status-badge status-work">' + escapeHtml(shiftLabel(shift,false)) + (e.note?(' · ' + escapeHtml(e.note)):'') + '</span>';
     else badge = '<span class="status-badge status-unset">未排班</span>';
     var editBtnHtml = calendarLocked ? '' : '<button class="btn btn-text-sm" data-role="editBtn">編輯</button>';
+    var pickupOn = isPickupMarked(m.id, openDetailDate);
+    var pickupBtnHtml = '<button type="button" class="pickup-toggle-lg' + (pickupOn?' active':'') + '" data-role="pickupToggle" title="可接送小孩"' + (calendarLocked ? ' disabled' : '') + '>🛵</button>';
     return '<div class="day-member-row" data-member="' + m.id + '">' +
       '<div class="day-member-info"><span class="member-dot" style="background:' + m.color + ';color:' + contrastColor(m.color) + '">' + escapeHtml(initial) + '</span>' +
       '<span class="day-member-name">' + escapeHtml(m.name) + '</span></div>' +
-      badge + editBtnHtml + '</div>';
+      badge + pickupBtnHtml + editBtnHtml + '</div>';
   }).join('');
 
   body.querySelectorAll('.day-member-row').forEach(function(row){
@@ -1081,6 +1130,10 @@ function renderDayModalBody(){
     var editBtn = row.querySelector('[data-role="editBtn"]');
     if(editBtn){
       editBtn.addEventListener('click', function(){ dayEditingMemberId = memberId; renderDayModalBody(); });
+    }
+    var pickupBtn = row.querySelector('[data-role="pickupToggle"]');
+    if(pickupBtn){
+      pickupBtn.addEventListener('click', function(){ togglePickup(memberId, openDetailDate); });
     }
     if(row.classList.contains('editing')){
       row.querySelector('[data-role="cancelEdit"]').addEventListener('click', function(){ dayEditingMemberId = null; renderDayModalBody(); });
@@ -1149,6 +1202,7 @@ function renderMemberModal(){
       openConfirm('確定要刪除成員「' + m.name + '」嗎？此成員的所有班表紀錄也會一併刪除。', function(){
         state.members = state.members.filter(function(x){ return x.id!==id; });
         delete state.schedules[id];
+        delete state.pickups[id];
         saveState();
         renderMemberModal(); renderAll();
         showToast('已刪除成員');
@@ -1406,6 +1460,7 @@ document.addEventListener('DOMContentLoaded', function(){
         members: pendingImportData.members || [],
         shiftTypes: pendingImportData.shiftTypes || null,
         schedules: pendingImportData.schedules || {},
+        pickups: pendingImportData.pickups || {},
         syncCode: state.syncCode
       });
       saveState();
@@ -1428,13 +1483,17 @@ document.addEventListener('DOMContentLoaded', function(){
       if(!state.schedules[memberId]) state.schedules[memberId] = {};
       Object.assign(state.schedules[memberId], pendingImportData.schedules[memberId]);
     });
+    Object.keys(pendingImportData.pickups||{}).forEach(function(memberId){
+      if(!state.pickups[memberId]) state.pickups[memberId] = {};
+      Object.assign(state.pickups[memberId], pendingImportData.pickups[memberId]);
+    });
     saveState();
     finishImport();
   });
   document.getElementById('btnResetAll').addEventListener('click', function(){
     var extra = state.syncCode ? '若目前已連接即時同步，家人裝置上的資料也會一併被清除。' : '';
     openConfirm('確定要重設所有資料嗎？所有成員、班別與班表紀錄都會被刪除。' + extra + '此動作無法復原。', function(){
-      state = {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, syncCode: state.syncCode};
+      state = {members:[], shiftTypes: defaultShiftTypes(), schedules:{}, pickups:{}, syncCode: state.syncCode};
       saveState();
       renderAll();
       hideModal('syncModalOverlay');
